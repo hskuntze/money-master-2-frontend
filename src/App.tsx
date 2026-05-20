@@ -1,25 +1,71 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import "react-toastify/dist/ReactToastify.css";
+import "./App.css";
+
+import { useEffect } from "react";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import AppLayout from "@/components/AppLayout";
+import PrivateRoute from "@/PrivateRoute";
+import Landing from "@/pages/Landing";
+import AuthPage from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import ChatPage from "@/pages/Chat";
+import TransactionsPage from "@/pages/Transactions";
+import AccountsPage from "@/pages/Accounts";
+import CategoriesPage from "@/pages/Categories";
+import SavingsJarsPage from "@/pages/SavingsJars";
+import ReportsPage from "@/pages/Reports";
+import ThemeSettingsPage from "@/pages/ThemeSettings";
+import NotFound from "@/pages/NotFound";
+import { setupInterceptors } from "@/utils/interceptor";
 
 function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setupInterceptors(navigate);
+  }, [navigate]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<AuthPage mode="login" />} />
+        <Route path="/register" element={<AuthPage mode="register" />} />
+        <Route path="/recover-password" element={<AuthPage mode="recover" />} />
+        <Route path="/confirm-email" element={<AuthPage mode="confirm" />} />
+
+        <Route
+          path="/app"
+          element={
+            <PrivateRoute>
+              <AppLayout />
+            </PrivateRoute>
+          }
         >
-          Learn React
-        </a>
-      </header>
-    </div>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="chat" element={<ChatPage />} />
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
+          <Route path="categories" element={<CategoriesPage />} />
+          <Route path="savings-jars" element={<SavingsJarsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route
+            path="theme"
+            element={
+              <PrivateRoute permissions={["THEME_MANAGE"]}>
+                <ThemeSettingsPage />
+              </PrivateRoute>
+            }
+          />
+          <Route path="denied" element={<NotFound type="denied" />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <ToastContainer position="top-right" autoClose={3500} theme="light" />
+    </>
   );
 }
 

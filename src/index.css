@@ -1,13 +1,51 @@
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
+  background: var(--mm-background, #f8fafc);
+  color: var(--mm-text, #0f172a);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.MuiSvgIcon-root {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+:root {
+  --mm-primary: #2563eb;
+  --mm-secondary: #0f172a;
+  --mm-accent: #22c55e;
+  --mm-background: #f8fafc;
+  --mm-text: #0f172a;
+  --mm-card: #ffffff;
+  --mm-muted: #64748b;
+  --mm-border: rgba(15, 23, 42, 0.1);
+  --mm-danger: #ef4444;
+  --mm-warning: #f97316;
+  --mm-success: #16a34a;
 }

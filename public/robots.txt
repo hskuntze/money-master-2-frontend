@@ -1,3 +1,5 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Atualize a URL de sitemap quando publicar o domínio oficial.
+# Sitemap: https://seudominio.com.br/sitemap.xml
