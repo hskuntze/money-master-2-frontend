@@ -21,17 +21,10 @@ function mergeSafeChartOptions(id: string, options: any) {
         enabled: false,
       },
       toolbar: {
-        show: false,
         ...(options?.chart?.toolbar || {}),
+        show: false,
       },
     },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "40%",
-      },
-    },
-    colors: ["#004ac6", "#e21111"],
   };
 }
 
@@ -49,5 +42,9 @@ export default function SafeApexChart({ id, options, series, type, height = 300,
     return <div className="chart-placeholder" style={{ height }} />;
   }
 
-  return <Chart key={id} options={safeOptions} series={series} type={type} height={height} width={width} />;
+  return (
+    <div className="safe-apex-chart">
+      <Chart key={id} options={safeOptions} series={series} type={type} height={height} width={width} />
+    </div>
+  );
 }
