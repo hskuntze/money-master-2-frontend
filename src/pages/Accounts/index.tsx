@@ -22,6 +22,7 @@ import {
 } from "@/types/finance";
 import { api } from "@/utils/requests";
 import { enumLabel, formatMoney, getErrorMessage } from "@/utils/formatters";
+import { formatMoneyInput, parseMoneyInput } from "@/utils/moneyMask";
 
 const accountTypes: AccountType[] = [
   "CHECKING",
@@ -410,13 +411,12 @@ export default function AccountsPage() {
             <label>
               Saldo inicial
               <input
-                type="number"
-                step="0.01"
-                value={form.initialBalance}
+                inputMode="decimal"
+                value={formatMoneyInput(form.initialBalance)}
                 onChange={(event) =>
                   setForm({
                     ...form,
-                    initialBalance: Number(event.target.value),
+                    initialBalance: parseMoneyInput(event.target.value),
                   })
                 }
               />

@@ -1,13 +1,26 @@
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import AddIcon from "@mui/icons-material/Add";
 import AutoGraphIcon from "@mui/icons-material/AutoGraph";
+import BeachAccessIcon from "@mui/icons-material/BeachAccess";
+import CelebrationIcon from "@mui/icons-material/Celebration";
 import CloseIcon from "@mui/icons-material/Close";
 import ComputerIcon from "@mui/icons-material/Computer";
+import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
+import HomeIcon from "@mui/icons-material/Home";
+import LocalAtmIcon from "@mui/icons-material/LocalAtm";
+import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SavingsIcon from "@mui/icons-material/Savings";
+import PetsIcon from "@mui/icons-material/Pets";
+import SchoolIcon from "@mui/icons-material/School";
 import SecurityIcon from "@mui/icons-material/Security";
+import ShoppingBagIcon from "@mui/icons-material/ShoppingBag";
+import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import WalletIcon from "@mui/icons-material/Wallet";
+import WorkIcon from "@mui/icons-material/Work";
 import { Box, Modal } from "@mui/material";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
@@ -17,6 +30,7 @@ import SafeApexChart from "@/components/SafeApexChart";
 import { AccountResponse, SavingsJarMovementResponse, SavingsJarPayload, SavingsJarResponse } from "@/types/finance";
 import { todayISO } from "@/utils/dates";
 import { enumLabel, formatDate, formatMoney, formatPercent, getErrorMessage } from "@/utils/formatters";
+import { formatMoneyInput, parseMoneyInput } from "@/utils/moneyMask";
 import { api } from "@/utils/requests";
 
 const emptyForm: SavingsJarPayload = {
@@ -43,13 +57,64 @@ const emptyForm: SavingsJarPayload = {
 const emptyMovement = { amount: 0, occurredOn: todayISO(), description: "" };
 
 type MovementAction = "deposit" | "withdraw" | "yield";
+type JarVisualMode = "icon" | "image";
+
+const jarIconOptions = [
+  { value: "savings", label: "Cofrinho", icon: <SavingsIcon /> },
+  { value: "wallet", label: "Carteira", icon: <WalletIcon /> },
+  { value: "car", label: "Carro", icon: <DirectionsCarIcon /> },
+  { value: "travel", label: "Viagem", icon: <FlightTakeoffIcon /> },
+  { value: "computer", label: "Tecnologia", icon: <ComputerIcon /> },
+  { value: "home", label: "Casa", icon: <HomeIcon /> },
+  { value: "education", label: "Estudos", icon: <SchoolIcon /> },
+  { value: "security", label: "Reserva", icon: <SecurityIcon /> },
+  { value: "health", label: "Saúde", icon: <MedicalServicesIcon /> },
+  { value: "work", label: "Trabalho", icon: <WorkIcon /> },
+  { value: "cash", label: "Dinheiro", icon: <LocalAtmIcon /> },
+  { value: "investment", label: "Investimento", icon: <TrendingUpIcon /> },
+  { value: "shopping", label: "Compras", icon: <ShoppingBagIcon /> },
+  { value: "party", label: "Festa", icon: <CelebrationIcon /> },
+  { value: "beach", label: "Praia", icon: <BeachAccessIcon /> },
+  { value: "pet", label: "Pet", icon: <PetsIcon /> },
+  { value: "game", label: "Games", icon: <SportsEsportsIcon /> },
+  { value: "dream", label: "Sonho", icon: <FavoriteIcon /> },
+  { value: "account", label: "Conta", icon: <AccountBalanceWalletIcon /> },
+];
+
+function renderJarIcon(icon?: string | null) {
+  const normalized = (icon || "savings").trim().toLowerCase();
+
+  if (["piggy-bank", "piggybank", "cofrinho", "savings"].includes(normalized)) return <SavingsIcon />;
+  if (["wallet", "carteira"].includes(normalized)) return <WalletIcon />;
+  if (["car", "directions-car", "directionscar", "carro", "veiculo", "veículo"].includes(normalized)) return <DirectionsCarIcon />;
+  if (["travel", "flight", "flight-takeoff", "flighttakeoff", "viagem"].includes(normalized)) return <FlightTakeoffIcon />;
+  if (["computer", "notebook", "technology", "tecnologia"].includes(normalized)) return <ComputerIcon />;
+  if (["home", "house", "casa"].includes(normalized)) return <HomeIcon />;
+  if (["education", "school", "estudos"].includes(normalized)) return <SchoolIcon />;
+  if (["security", "reserva", "emergency", "emergencia", "emergência"].includes(normalized)) return <SecurityIcon />;
+  if (["health", "saude", "saúde", "medical"].includes(normalized)) return <MedicalServicesIcon />;
+  if (["work", "trabalho"].includes(normalized)) return <WorkIcon />;
+  if (["cash", "dinheiro"].includes(normalized)) return <LocalAtmIcon />;
+  if (["investment", "investimento", "trending"].includes(normalized)) return <TrendingUpIcon />;
+  if (["shopping", "compras"].includes(normalized)) return <ShoppingBagIcon />;
+  if (["party", "festa", "celebration"].includes(normalized)) return <CelebrationIcon />;
+  if (["beach", "praia"].includes(normalized)) return <BeachAccessIcon />;
+  if (["pet", "pets"].includes(normalized)) return <PetsIcon />;
+  if (["game", "games"].includes(normalized)) return <SportsEsportsIcon />;
+  if (["dream", "sonho", "favorite"].includes(normalized)) return <FavoriteIcon />;
+  if (["account", "conta"].includes(normalized)) return <AccountBalanceWalletIcon />;
+
+  return <SavingsIcon />;
+}
 
 function getJarIcon(jar: Pick<SavingsJarResponse, "name" | "icon"> | SavingsJarPayload) {
-  const text = `${jar.icon || ""} ${jar.name || ""}`.toLowerCase();
+  if (jar.icon) return renderJarIcon(jar.icon);
+
+  const text = `${jar.name || ""}`.toLowerCase();
   if (text.includes("viagem") || text.includes("travel") || text.includes("avi")) return <FlightTakeoffIcon />;
   if (text.includes("comput") || text.includes("notebook")) return <ComputerIcon />;
   if (text.includes("reserva") || text.includes("emerg")) return <SecurityIcon />;
-  if (text.includes("carro") || text.includes("veículo")) return <WalletIcon />;
+  if (text.includes("carro") || text.includes("veículo")) return <DirectionsCarIcon />;
   return <SavingsIcon />;
 }
 
@@ -62,6 +127,7 @@ export default function SavingsJarsPage() {
   const [movements, setMovements] = useState<SavingsJarMovementResponse[]>([]);
   const [movement, setMovement] = useState(emptyMovement);
   const [movementAction, setMovementAction] = useState<MovementAction>("deposit");
+  const [jarVisualMode, setJarVisualMode] = useState<JarVisualMode>("icon");
   const [jarModalOpen, setJarModalOpen] = useState(false);
   const [movementModalOpen, setMovementModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -154,17 +220,20 @@ export default function SavingsJarsPage() {
   const resetJarForm = useCallback(() => {
     setEditing(null);
     setForm(emptyForm);
+    setJarVisualMode("icon");
     setJarModalOpen(false);
   }, []);
 
   const openCreateModal = useCallback(() => {
     setEditing(null);
     setForm(emptyForm);
+    setJarVisualMode("icon");
     setJarModalOpen(true);
   }, []);
 
   const edit = useCallback((jar: SavingsJarResponse) => {
     setEditing(jar);
+    setJarVisualMode(jar.imageUrl ? "image" : "icon");
     setForm({
       name: jar.name,
       institutionName: jar.institutionName || "",
@@ -193,6 +262,8 @@ export default function SavingsJarsPage() {
       setLoading(true);
       const payload: SavingsJarPayload = {
         ...form,
+        imageUrl: jarVisualMode === "image" ? form.imageUrl || "" : "",
+        icon: form.icon || "savings",
         targetAmount: Number(form.targetAmount || 0),
         currentAmount: editing ? undefined : Number(form.currentAmount || 0),
         currentYieldAmount: editing ? undefined : Number(form.currentYieldAmount || 0),
@@ -218,7 +289,7 @@ export default function SavingsJarsPage() {
         setLoading(false);
       }
     },
-    [editing, form, load, resetJarForm],
+    [editing, form, jarVisualMode, load, resetJarForm],
   );
 
   const openMovementModal = useCallback(
@@ -505,10 +576,9 @@ export default function SavingsJarsPage() {
               <label>
                 Meta
                 <input
-                  type="number"
-                  step="0.01"
-                  value={form.targetAmount || 0}
-                  onChange={(event) => setForm({ ...form, targetAmount: Number(event.target.value) })}
+                  inputMode="decimal"
+                  value={formatMoneyInput(form.targetAmount)}
+                  onChange={(event) => setForm({ ...form, targetAmount: parseMoneyInput(event.target.value) })}
                 />
               </label>
               <label>
@@ -534,31 +604,69 @@ export default function SavingsJarsPage() {
                   <label>
                     Valor atual no banco
                     <input
-                      type="number"
-                      step="0.01"
-                      value={form.currentAmount || 0}
-                      onChange={(event) => setForm({ ...form, currentAmount: Number(event.target.value) })}
+                      inputMode="decimal"
+                      value={formatMoneyInput(form.currentAmount)}
+                      onChange={(event) => setForm({ ...form, currentAmount: parseMoneyInput(event.target.value) })}
                     />
                   </label>
                   <label>
                     Rendimento bruto já acumulado
                     <input
-                      type="number"
-                      step="0.01"
-                      value={form.currentYieldAmount || 0}
-                      onChange={(event) => setForm({ ...form, currentYieldAmount: Number(event.target.value) })}
+                      inputMode="decimal"
+                      value={formatMoneyInput(form.currentYieldAmount)}
+                      onChange={(event) => setForm({ ...form, currentYieldAmount: parseMoneyInput(event.target.value) })}
                     />
                   </label>
                 </>
               )}
-              <label>
-                Imagem ou URL
-                <input
-                  value={form.imageUrl || ""}
-                  onChange={(event) => setForm({ ...form, imageUrl: event.target.value })}
-                  placeholder="https://..."
-                />
-              </label>
+              <div className="jar-visual-field form-field-span-2">
+                <div className="field-heading-row">
+                  <label>Imagem do cofrinho</label>
+                  <div className="segmented-control compact">
+                    <button
+                      type="button"
+                      className={jarVisualMode === "icon" ? "active" : ""}
+                      onClick={() => {
+                        setJarVisualMode("icon");
+                        setForm({ ...form, imageUrl: "", icon: form.icon || "savings" });
+                      }}
+                    >
+                      Ícone MUI
+                    </button>
+                    <button type="button" className={jarVisualMode === "image" ? "active" : ""} onClick={() => setJarVisualMode("image")}>
+                      URL de imagem
+                    </button>
+                  </div>
+                </div>
+
+                {jarVisualMode === "image" ? (
+                  <div className="jar-image-url-row">
+                    <span className="jar-visual-preview" style={{ background: `${form.color || "#2563EB"}16`, color: form.color || "#2563EB" }}>
+                      {form.imageUrl ? <img src={form.imageUrl} alt="Prévia do cofrinho" /> : getJarIcon(form)}
+                    </span>
+                    <input
+                      value={form.imageUrl || ""}
+                      onChange={(event) => setForm({ ...form, imageUrl: event.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+                ) : (
+                  <div className="jar-icon-picker">
+                    {jarIconOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={form.icon === option.value ? "active" : ""}
+                        onClick={() => setForm({ ...form, icon: option.value, imageUrl: "" })}
+                        title={option.label}
+                      >
+                        <span style={{ background: `${form.color || "#2563EB"}16`, color: form.color || "#2563EB" }}>{option.icon}</span>
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <label>
                 Cor
                 <div className="theme-color-input embedded-color-input">
@@ -656,10 +764,9 @@ export default function SavingsJarsPage() {
           <div className="modal-form">
             <label>Valor</label>
             <input
-              type="number"
-              step="0.01"
-              value={movement.amount}
-              onChange={(event) => setMovement({ ...movement, amount: Number(event.target.value) })}
+              inputMode="decimal"
+              value={formatMoneyInput(movement.amount)}
+              onChange={(event) => setMovement({ ...movement, amount: parseMoneyInput(event.target.value) })}
             />
             <label>Data</label>
             <input type="date" value={movement.occurredOn} onChange={(event) => setMovement({ ...movement, occurredOn: event.target.value })} />

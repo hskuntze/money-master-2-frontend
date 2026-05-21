@@ -23,6 +23,7 @@ input,
 select,
 textarea {
   font: inherit;
+  font-weight: 400;
 }
 button {
   cursor: pointer;

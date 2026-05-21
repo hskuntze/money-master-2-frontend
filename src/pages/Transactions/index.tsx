@@ -14,9 +14,26 @@ import EmptyState from "../../components/EmptyState";
 import { AccountResponse, CategoryResponse, FinancialTransactionPayload, FinancialTransactionResponse, TransactionType } from "../../types/finance";
 import { firstDayOfCurrentMonthISO, todayISO } from "../../utils/dates";
 import { enumLabel, formatDate, formatMoney, getErrorMessage } from "../../utils/formatters";
+import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyMask";
 import { api } from "../../utils/requests";
 
 const types: TransactionType[] = ["EXPENSE", "INCOME", "TRANSFER"];
+
+type TransactionFilters = {
+  from: string;
+  to: string;
+  type: TransactionType | "";
+  accountId: string;
+  categoryId: string;
+};
+
+const defaultFilters = (): TransactionFilters => ({
+  from: firstDayOfCurrentMonthISO(),
+  to: todayISO(),
+  type: "",
+  accountId: "",
+  categoryId: "",
+});
 
 const defaultForm = (): FinancialTransactionPayload => ({
   accountId: 0,
@@ -41,6 +58,12 @@ function getTransactionTone(type: TransactionType) {
   return "expense";
 }
 
+function daysAgoISO(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<FinancialTransactionResponse[]>([]);
   const [accounts, setAccounts] = useState<AccountResponse[]>([]);
@@ -48,7 +71,9 @@ export default function TransactionsPage() {
   const [form, setForm] = useState<FinancialTransactionPayload>(defaultForm());
   const [editing, setEditing] = useState<FinancialTransactionResponse | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [filters, setFilters] = useState({ from: firstDayOfCurrentMonthISO(), to: todayISO(), type: "" as TransactionType | "" });
+  const [filters, setFilters] = useState<TransactionFilters>(defaultFilters());
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const loadBase = useCallback(async () => {
@@ -62,7 +87,13 @@ export default function TransactionsPage() {
   }, []);
 
   const loadTransactions = useCallback(async () => {
-    const response = await api.listTransactions({ ...filters, type: filters.type || undefined });
+    const response = await api.listTransactions({
+      from: filters.from || undefined,
+      to: filters.to || undefined,
+      type: filters.type || undefined,
+      accountId: filters.accountId || undefined,
+      categoryId: filters.categoryId || undefined,
+    });
     setTransactions(response.data);
   }, [filters]);
 
@@ -78,6 +109,13 @@ export default function TransactionsPage() {
     () => categories.filter((item) => item.type === form.type || (form.type === "TRANSFER" && item.type === "TRANSFER")),
     [categories, form.type],
   );
+
+  const advancedCategoryOptions = useMemo(() => {
+    if (!filters.type) return categories;
+    return categories.filter((item) => item.type === filters.type);
+  }, [categories, filters.type]);
+
+  const activeAdvancedFilters = Boolean(filters.accountId || filters.categoryId);
 
   const openCreateModal = useCallback(() => {
     setEditing(null);
@@ -105,6 +143,28 @@ export default function TransactionsPage() {
       notes: item.notes || "",
     });
     setModalOpen(true);
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setFilters(defaultFilters());
+    setOptionsOpen(false);
+  }, []);
+
+  const refreshTransactions = useCallback(() => {
+    loadTransactions()
+      .then(() => toast.success("Transações atualizadas."))
+      .catch((error) => toast.error(getErrorMessage(error)));
+    setOptionsOpen(false);
+  }, [loadTransactions]);
+
+  const applyLastSevenDays = useCallback(() => {
+    setFilters((prev) => ({ ...prev, from: daysAgoISO(7), to: todayISO() }));
+    setOptionsOpen(false);
+  }, []);
+
+  const applyCurrentMonth = useCallback(() => {
+    setFilters((prev) => ({ ...prev, from: firstDayOfCurrentMonthISO(), to: todayISO() }));
+    setOptionsOpen(false);
   }, []);
 
   const submit = useCallback(
@@ -184,7 +244,10 @@ export default function TransactionsPage() {
             <div className="filters-inline compact-filters">
               <input type="date" value={filters.from} onChange={(e) => setFilters((prev) => ({ ...prev, from: e.target.value }))} />
               <input type="date" value={filters.to} onChange={(e) => setFilters((prev) => ({ ...prev, to: e.target.value }))} />
-              <select value={filters.type} onChange={(e) => setFilters((prev) => ({ ...prev, type: e.target.value as TransactionType | "" }))}>
+              <select
+                value={filters.type}
+                onChange={(e) => setFilters((prev) => ({ ...prev, type: e.target.value as TransactionType | "", categoryId: "" }))}
+              >
                 <option value="">Todos</option>
                 {types.map((type) => (
                   <option key={type} value={type}>
@@ -193,14 +256,74 @@ export default function TransactionsPage() {
                 ))}
               </select>
             </div>
-            <button className="icon-button soft" type="button" title="Filtros">
+            <button
+              className={`icon-button soft ${advancedFiltersOpen || activeAdvancedFilters ? "active" : ""}`}
+              type="button"
+              title="Filtros avançados"
+              aria-pressed={advancedFiltersOpen}
+              onClick={() => setAdvancedFiltersOpen((prev) => !prev)}
+            >
               <FilterListIcon />
             </button>
-            <button className="icon-button ghost" type="button" title="Mais opções">
-              <MoreVertIcon />
-            </button>
+            <div className="transactions-options-wrapper">
+              <button
+                className={`icon-button ghost ${optionsOpen ? "active" : ""}`}
+                type="button"
+                title="Mais opções"
+                aria-expanded={optionsOpen}
+                onClick={() => setOptionsOpen((prev) => !prev)}
+              >
+                <MoreVertIcon />
+              </button>
+              {optionsOpen && (
+                <div className="transactions-options-menu" role="menu">
+                  <button type="button" onClick={applyCurrentMonth}>
+                    Mês atual
+                  </button>
+                  <button type="button" onClick={applyLastSevenDays}>
+                    Últimos 7 dias
+                  </button>
+                  <button type="button" onClick={resetFilters}>
+                    Limpar filtros
+                  </button>
+                  <button type="button" onClick={refreshTransactions}>
+                    Atualizar lista
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {advancedFiltersOpen && (
+          <div className="transactions-advanced-filters">
+            <label>
+              Conta
+              <select value={filters.accountId} onChange={(e) => setFilters((prev) => ({ ...prev, accountId: e.target.value }))}>
+                <option value="">Todas as contas</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Categoria
+              <select value={filters.categoryId} onChange={(e) => setFilters((prev) => ({ ...prev, categoryId: e.target.value }))}>
+                <option value="">Todas as categorias</option>
+                {advancedCategoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="btn btn-ghost" onClick={resetFilters}>
+              Limpar filtros
+            </button>
+          </div>
+        )}
 
         {transactions.length ? (
           <div className="responsive-table transaction-table-wrap">
@@ -295,11 +418,9 @@ export default function TransactionsPage() {
                 Valor
                 <input
                   required
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={form.amount}
-                  onChange={(e) => setForm((prev) => ({ ...prev, amount: Number(e.target.value) }))}
+                  inputMode="decimal"
+                  value={formatMoneyInput(form.amount)}
+                  onChange={(e) => setForm((prev) => ({ ...prev, amount: parseMoneyInput(e.target.value) }))}
                 />
               </label>
             </div>
