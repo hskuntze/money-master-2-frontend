@@ -1,8 +1,21 @@
-export type AccountType = "CHECKING" | "SAVINGS" | "CASH" | "CREDIT_CARD" | "INVESTMENT" | "OTHER";
+export type AccountType =
+  | "CHECKING"
+  | "SAVINGS"
+  | "CASH"
+  | "CREDIT_CARD"
+  | "INVESTMENT"
+  | "OTHER";
 export type TransactionType = "INCOME" | "EXPENSE" | "TRANSFER";
 export type TransactionSource = "MANUAL" | "AI_CHAT" | "IMPORTED";
 export type SavingsJarYieldCalculationType = "MANUAL" | "CDI_PERCENTAGE";
-export type SavingsJarMovementType = "INITIAL_BALANCE" | "INITIAL_YIELD" | "DEPOSIT" | "WITHDRAWAL" | "YIELD" | "ADJUSTMENT";
+export type SavingsJarMovementType =
+  | "INITIAL_BALANCE"
+  | "INITIAL_YIELD"
+  | "DEPOSIT"
+  | "WITHDRAWAL"
+  | "YIELD"
+  | "YIELD_ADJUSTMENT"
+  | "ADJUSTMENT";
 
 export type AccountResponse = {
   id: number;
@@ -162,6 +175,18 @@ export type SavingsJarMovementResponse = {
   createdAt?: string;
 };
 
+export type SavingsJarYieldCorrectionResponse = {
+  savingsJarId: number;
+  savingsJarName: string;
+  occurredOn: string;
+  previousYieldAmount: number;
+  realYieldAmount: number;
+  adjustmentAmount: number;
+  currentAmountAfterAdjustment: number;
+  movement: SavingsJarMovementResponse;
+  message: string;
+};
+
 export type SavingsJarPayload = {
   name: string;
   institutionName?: string | null;
@@ -186,5 +211,6 @@ export type SavingsJarPayload = {
 
 export type FinanceChatResponse = {
   answer: string;
+  conversationId: string;
   answeredAt: string;
 };

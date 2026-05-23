@@ -20,7 +20,12 @@ const navItems = [
   { to: "/app/categories", label: "Categorias", icon: <CategoryIcon /> },
   { to: "/app/savings-jars", label: "Cofrinhos", icon: <SavingsIcon /> },
   { to: "/app/reports", label: "Relatórios", icon: <BarChartIcon /> },
-  { to: "/app/theme", label: "Tema", icon: <PaletteIcon />, permission: "THEME_MANAGE" },
+  {
+    to: "/app/theme",
+    label: "Tema",
+    icon: <PaletteIcon />,
+    permission: "THEME_MANAGE",
+  },
 ];
 
 export default function AppLayout() {
@@ -37,7 +42,11 @@ export default function AppLayout() {
     <div className="shell">
       <aside className="sidebar">
         <NavLink to="/app/dashboard" className="brand-block">
-          {theme.logoUrl ? <img src={theme.logoUrl} alt={theme.appName} /> : <span>MM</span>}
+          {theme.logoUrl ? (
+            <img src={theme.logoUrl} alt={theme.appName} />
+          ) : (
+            <span>MM</span>
+          )}
           <div>
             <strong>{theme.appName || "Money Master 2"}</strong>
             <small>Kuntze Dev</small>
@@ -46,9 +55,19 @@ export default function AppLayout() {
 
         <nav className="side-nav">
           {navItems
-            .filter((item) => !item.permission || user?.permissions?.includes(item.permission))
+            .filter(
+              (item) =>
+                !item.permission ||
+                user?.permissions?.includes(item.permission),
+            )
             .map((item) => (
-              <NavLink key={item.to} to={item.to} className={({ isActive }) => `side-link ${isActive ? "active" : ""}`}>
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `side-link ${isActive ? "active" : ""}`
+                }
+              >
                 {item.icon}
                 <span>{item.label}</span>
               </NavLink>

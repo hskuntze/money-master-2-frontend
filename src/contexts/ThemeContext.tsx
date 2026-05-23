@@ -1,4 +1,10 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { defaultTheme, ThemeResponse } from "@/types/theme";
 import { api } from "@/utils/requests";
 
@@ -18,12 +24,30 @@ export const ThemeContext = createContext<ThemeContextType>({
 
 function applyCssVariables(theme: ThemeResponse) {
   const root = document.documentElement;
-  root.style.setProperty("--mm-primary", theme.primaryColor || defaultTheme.primaryColor);
-  root.style.setProperty("--mm-secondary", theme.secondaryColor || defaultTheme.secondaryColor);
-  root.style.setProperty("--mm-accent", theme.accentColor || defaultTheme.accentColor);
-  root.style.setProperty("--mm-background", theme.backgroundColor || defaultTheme.backgroundColor);
-  root.style.setProperty("--mm-text", theme.textColor || defaultTheme.textColor);
-  root.style.setProperty("--mm-card", theme.cardColor || defaultTheme.cardColor);
+  root.style.setProperty(
+    "--mm-primary",
+    theme.primaryColor || defaultTheme.primaryColor,
+  );
+  root.style.setProperty(
+    "--mm-secondary",
+    theme.secondaryColor || defaultTheme.secondaryColor,
+  );
+  root.style.setProperty(
+    "--mm-accent",
+    theme.accentColor || defaultTheme.accentColor,
+  );
+  root.style.setProperty(
+    "--mm-background",
+    theme.backgroundColor || defaultTheme.backgroundColor,
+  );
+  root.style.setProperty(
+    "--mm-text",
+    theme.textColor || defaultTheme.textColor,
+  );
+  root.style.setProperty(
+    "--mm-card",
+    theme.cardColor || defaultTheme.cardColor,
+  );
   document.title = theme.appName || defaultTheme.appName;
 }
 
@@ -54,7 +78,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     reloadTheme();
   }, [reloadTheme]);
 
-  const value = useMemo(() => ({ theme, loading, applyPreview, reloadTheme }), [theme, loading, applyPreview, reloadTheme]);
+  const value = useMemo(
+    () => ({ theme, loading, applyPreview, reloadTheme }),
+    [theme, loading, applyPreview, reloadTheme],
+  );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }

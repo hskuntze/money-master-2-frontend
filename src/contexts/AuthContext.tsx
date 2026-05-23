@@ -1,4 +1,10 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { UserResponse } from "@/types/auth";
 import { clearStoredSession, getAuthData, saveAuthData } from "@/utils/storage";
 import { isAuthenticated, tryRefreshToken } from "@/utils/auth";
@@ -48,9 +54,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthenticated(true);
   }, []);
 
-  const hasPermission = useCallback((permission: string) => Boolean(user?.permissions?.includes(permission)), [user?.permissions]);
+  const hasPermission = useCallback(
+    (permission: string) => Boolean(user?.permissions?.includes(permission)),
+    [user?.permissions],
+  );
 
-  const hasRole = useCallback((role: string) => Boolean(user?.roles?.includes(role)), [user?.roles]);
+  const hasRole = useCallback(
+    (role: string) => Boolean(user?.roles?.includes(role)),
+    [user?.roles],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -108,7 +120,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       hasPermission,
       hasRole,
     }),
-    [authenticated, loading, user, setSession, reloadUser, logout, hasPermission, hasRole]
+    [
+      authenticated,
+      loading,
+      user,
+      setSession,
+      reloadUser,
+      logout,
+      hasPermission,
+      hasRole,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,10 @@
-export default function ProgressBar({ value, label }: { value: number; label?: string }) {
+export default function ProgressBar({
+  value,
+  label,
+}: {
+  value: number;
+  label?: string;
+}) {
   const safe = Math.max(0, Math.min(100, Number(value || 0)));
   return (
     <div className="progress-wrap" aria-label={label || `Progresso ${safe}%`}>

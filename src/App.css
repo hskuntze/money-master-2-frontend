@@ -3446,3 +3446,32 @@ label,
     width: 100%;
   }
 }
+
+.yield-correction-summary,
+.yield-correction-difference {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid #dbe7fb;
+  border-radius: 14px;
+  background: #f8fbff;
+  padding: 0.95rem;
+}
+
+.yield-correction-summary span,
+.yield-correction-difference span {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.yield-correction-summary strong,
+.yield-correction-difference strong {
+  color: var(--mm-secondary);
+  font-size: 1.25rem;
+}
+
+.yield-correction-summary small {
+  color: #64748b;
+}

@@ -43,11 +43,17 @@ export function enumLabel(value?: string | null) {
     DEPOSIT: "Aporte",
     WITHDRAWAL: "Retirada",
     YIELD: "Rendimento",
+    YIELD_ADJUSTMENT: "Correção de rendimento",
     ADJUSTMENT: "Ajuste",
   };
   return value ? labels[value] || value : "-";
 }
 
-export function getErrorMessage(error: any, fallback = "Não foi possível concluir a operação.") {
-  return error?.response?.data?.message || error?.response?.data?.error || fallback;
+export function getErrorMessage(
+  error: any,
+  fallback = "Não foi possível concluir a operação.",
+) {
+  return (
+    error?.response?.data?.message || error?.response?.data?.error || fallback
+  );
 }

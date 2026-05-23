@@ -19,7 +19,9 @@ export default function MetricCard({
         <strong>{value}</strong>
         {subtitle && <small>{subtitle}</small>}
       </div>
-      <div className="metric-icon">{tone === "negative" ? <TrendingDownIcon /> : <TrendingUpIcon />}</div>
+      <div className="metric-icon">
+        {tone === "negative" ? <TrendingDownIcon /> : <TrendingUpIcon />}
+      </div>
     </article>
   );
 }

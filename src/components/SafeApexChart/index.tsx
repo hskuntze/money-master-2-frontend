@@ -28,7 +28,14 @@ function mergeSafeChartOptions(id: string, options: any) {
   };
 }
 
-export default function SafeApexChart({ id, options, series, type, height = 300, width = "100%" }: SafeApexChartProps) {
+export default function SafeApexChart({
+  id,
+  options,
+  series,
+  type,
+  height = 300,
+  width = "100%",
+}: SafeApexChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -36,7 +43,10 @@ export default function SafeApexChart({ id, options, series, type, height = 300,
     return () => setMounted(false);
   }, []);
 
-  const safeOptions = useMemo(() => mergeSafeChartOptions(id, options), [id, options]);
+  const safeOptions = useMemo(
+    () => mergeSafeChartOptions(id, options),
+    [id, options],
+  );
 
   if (!mounted) {
     return <div className="chart-placeholder" style={{ height }} />;
@@ -44,7 +54,14 @@ export default function SafeApexChart({ id, options, series, type, height = 300,
 
   return (
     <div className="safe-apex-chart">
-      <Chart key={id} options={safeOptions} series={series} type={type} height={height} width={width} />
+      <Chart
+        key={id}
+        options={safeOptions}
+        series={series}
+        type={type}
+        height={height}
+        width={width}
+      />
     </div>
   );
 }
