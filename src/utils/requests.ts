@@ -9,6 +9,14 @@ import {
 import { getAuthData } from "@/utils/storage";
 import { ThemeResponse, ThemeUpdateRequest } from "@/types/theme";
 import {
+  AccessLogResponse,
+  EmailSettingsResponse,
+  EmailSettingsUpdateRequest,
+  FailureLogDetailResponse,
+  FailureLogResponse,
+  PageResponse,
+} from "@/types/admin";
+import {
   AccountBalanceResponse,
   AccountResponse,
   CategoryReportResponse,
@@ -16,9 +24,22 @@ import {
   ComparativeReportResponse,
   DailyCashFlowResponse,
   FinanceChatResponse,
+  FinancialPeriodResponse,
+  FinancialPeriodTurnoverPayload,
+  FinancialPeriodUpdatePayload,
   FinancialSummaryResponse,
   FinancialTransactionPayload,
   FinancialTransactionResponse,
+  MonthlyPeriodSummaryResponse,
+  MonthlyPlanItemPayload,
+  MonthlyPlanItemPaymentPayload,
+  MonthlyPlanItemLinkTransactionPayload,
+  MonthlyPlanItemReopenPayload,
+  MonthlyPlanItemUnlinkTransactionPayload,
+  MonthlyPlanItemResponse,
+  MonthlyPlanItemStatus,
+  MonthlyPlanReconcilePayload,
+  MonthlyPlanReconcileResponse,
   SavingsJarMovementResponse,
   SavingsJarPayload,
   SavingsJarResponse,
@@ -103,6 +124,41 @@ export const api = {
       data,
     }),
 
+  getEmailSettings: () =>
+    requestBackend<EmailSettingsResponse>({
+      method: "GET",
+      url: "/admin/email-settings",
+    }),
+  updateEmailSettings: (data: EmailSettingsUpdateRequest) =>
+    requestBackend<EmailSettingsResponse>({
+      method: "PUT",
+      url: "/admin/email-settings",
+      data,
+    }),
+  testEmailSettings: (to: string) =>
+    requestBackend<{ message: string }>({
+      method: "POST",
+      url: "/admin/email-settings/test",
+      data: { to },
+    }),
+  listAccessLogs: (params?: Record<string, any>) =>
+    requestBackend<PageResponse<AccessLogResponse>>({
+      method: "GET",
+      url: "/admin/logs/access",
+      params,
+    }),
+  listFailureLogs: (params?: Record<string, any>) =>
+    requestBackend<PageResponse<FailureLogResponse>>({
+      method: "GET",
+      url: "/admin/logs/failures",
+      params,
+    }),
+  getFailureLog: (id: number) =>
+    requestBackend<FailureLogDetailResponse>({
+      method: "GET",
+      url: `/admin/logs/failures/${id}`,
+    }),
+
   listAccounts: () =>
     requestBackend<AccountResponse[]>({ method: "GET", url: "/accounts" }),
   getAccountBalance: (id: number) =>
@@ -163,6 +219,128 @@ export const api = {
     requestBackend<{ message: string }>({
       method: "DELETE",
       url: `/categories/${id}`,
+    }),
+
+  listFinancialPeriods: () =>
+    requestBackend<FinancialPeriodResponse[]>({
+      method: "GET",
+      url: "/financial-periods",
+    }),
+  currentFinancialPeriod: () =>
+    requestBackend<FinancialPeriodResponse>({
+      method: "GET",
+      url: "/financial-periods/current",
+    }),
+  getFinancialPeriod: (id: number) =>
+    requestBackend<FinancialPeriodResponse>({
+      method: "GET",
+      url: `/financial-periods/${id}`,
+    }),
+  turnoverFinancialPeriod: (data: FinancialPeriodTurnoverPayload) =>
+    requestBackend<FinancialPeriodResponse>({
+      method: "POST",
+      url: "/financial-periods/turnover",
+      data,
+    }),
+  updateFinancialPeriod: (id: number, data: FinancialPeriodUpdatePayload) =>
+    requestBackend<FinancialPeriodResponse>({
+      method: "PUT",
+      url: `/financial-periods/${id}`,
+      data,
+    }),
+  reopenFinancialPeriod: (id: number) =>
+    requestBackend<FinancialPeriodResponse>({
+      method: "POST",
+      url: `/financial-periods/${id}/reopen`,
+    }),
+  closeFinancialPeriod: (id: number) =>
+    requestBackend<FinancialPeriodResponse>({
+      method: "POST",
+      url: `/financial-periods/${id}/close`,
+    }),
+  monthlyPeriodSummary: (periodId: number) =>
+    requestBackend<MonthlyPeriodSummaryResponse>({
+      method: "GET",
+      url: `/financial-periods/${periodId}/summary`,
+    }),
+  listMonthlyPlanItems: (
+    periodId: number,
+    status?: MonthlyPlanItemStatus | "",
+  ) =>
+    requestBackend<MonthlyPlanItemResponse[]>({
+      method: "GET",
+      url: `/financial-periods/${periodId}/plan-items`,
+      params: { status: status || undefined },
+    }),
+  createMonthlyPlanItem: (periodId: number, data: MonthlyPlanItemPayload) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "POST",
+      url: `/financial-periods/${periodId}/plan-items`,
+      data,
+    }),
+  updateMonthlyPlanItem: (
+    itemId: number,
+    data: Partial<MonthlyPlanItemPayload>,
+  ) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "PUT",
+      url: `/financial-periods/plan-items/${itemId}`,
+      data,
+    }),
+  cancelMonthlyPlanItem: (itemId: number) =>
+    requestBackend<{ message: string }>({
+      method: "DELETE",
+      url: `/financial-periods/plan-items/${itemId}`,
+    }),
+
+  payMonthlyPlanItem: (itemId: number, data: MonthlyPlanItemPaymentPayload) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "POST",
+      url: `/financial-periods/plan-items/${itemId}/payments`,
+      data,
+    }),
+  reopenMonthlyPlanItem: (itemId: number, data: MonthlyPlanItemReopenPayload) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "POST",
+      url: `/financial-periods/plan-items/${itemId}/reopen`,
+      data,
+    }),
+  unlinkTransactionFromMonthlyPlanItem: (
+    itemId: number,
+    data: MonthlyPlanItemUnlinkTransactionPayload,
+  ) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "POST",
+      url: `/financial-periods/plan-items/${itemId}/unlink-transaction`,
+      data,
+    }),
+  linkTransactionToMonthlyPlanItem: (
+    itemId: number,
+    data: MonthlyPlanItemLinkTransactionPayload,
+  ) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "POST",
+      url: `/financial-periods/plan-items/${itemId}/link-transaction`,
+      data,
+    }),
+  listUnlinkedPeriodTransactions: (
+    periodId: number,
+    type?: TransactionType,
+    onlyUnlinked = true,
+  ) =>
+    requestBackend<FinancialTransactionResponse[]>({
+      method: "GET",
+      url: `/financial-periods/${periodId}/unlinked-transactions`,
+      params: { type, onlyUnlinked },
+    }),
+  reconcileMonthlyPlanTransactions: (
+    periodId: number,
+    data: MonthlyPlanReconcilePayload,
+  ) =>
+    requestBackend<MonthlyPlanReconcileResponse>({
+      method: "POST",
+      url: `/financial-periods/${periodId}/reconcile-transactions`,
+      data,
     }),
 
   listTransactions: (params?: Record<string, any>) =>
@@ -247,6 +425,11 @@ export const api = {
       method: "PUT",
       url: `/savings-jars/${id}`,
       data,
+    }),
+  deleteSavingsJar: (id: number) =>
+    requestBackend<{ message: string }>({
+      method: "DELETE",
+      url: `/savings-jars/${id}`,
     }),
   deactivateSavingsJar: (id: number) =>
     requestBackend<{ message: string }>({

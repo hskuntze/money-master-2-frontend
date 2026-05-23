@@ -2,6 +2,7 @@ export type ThemeResponse = {
   id?: number;
   appName: string;
   logoUrl?: string | null;
+  faviconUrl?: string | null;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -17,6 +18,7 @@ export type ThemeUpdateRequest = Omit<ThemeResponse, "id">;
 export const defaultTheme: ThemeResponse = {
   appName: "Money Master 2",
   logoUrl: "",
+  faviconUrl: "",
   primaryColor: "#2563EB",
   secondaryColor: "#0F172A",
   accentColor: "#22C55E",

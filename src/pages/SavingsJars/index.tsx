@@ -5,13 +5,14 @@ import BeachAccessIcon from "@mui/icons-material/BeachAccess";
 import CelebrationIcon from "@mui/icons-material/Celebration";
 import CloseIcon from "@mui/icons-material/Close";
 import ComputerIcon from "@mui/icons-material/Computer";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import DirectionsCarIcon from "@mui/icons-material/DirectionsCar";
+import EditIcon from "@mui/icons-material/Edit";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import FlightTakeoffIcon from "@mui/icons-material/FlightTakeoff";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalAtmIcon from "@mui/icons-material/LocalAtm";
 import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SavingsIcon from "@mui/icons-material/Savings";
 import PetsIcon from "@mui/icons-material/Pets";
 import SchoolIcon from "@mui/icons-material/School";
@@ -24,12 +25,24 @@ import WorkIcon from "@mui/icons-material/Work";
 import { Box, Modal } from "@mui/material";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import ProgressBar from "@/components/ProgressBar";
 import SafeApexChart from "@/components/SafeApexChart";
-import { AccountResponse, SavingsJarMovementResponse, SavingsJarPayload, SavingsJarResponse } from "@/types/finance";
+import {
+  AccountResponse,
+  SavingsJarMovementResponse,
+  SavingsJarPayload,
+  SavingsJarResponse,
+} from "@/types/finance";
 import { todayISO } from "@/utils/dates";
-import { enumLabel, formatDate, formatMoney, formatPercent, getErrorMessage } from "@/utils/formatters";
+import {
+  enumLabel,
+  formatDate,
+  formatMoney,
+  formatPercent,
+  getErrorMessage,
+} from "@/utils/formatters";
 import { formatMoneyInput, parseMoneyInput } from "@/utils/moneyMask";
 import { api } from "@/utils/requests";
 
@@ -84,37 +97,75 @@ const jarIconOptions = [
 function renderJarIcon(icon?: string | null) {
   const normalized = (icon || "savings").trim().toLowerCase();
 
-  if (["piggy-bank", "piggybank", "cofrinho", "savings"].includes(normalized)) return <SavingsIcon />;
+  if (["piggy-bank", "piggybank", "cofrinho", "savings"].includes(normalized))
+    return <SavingsIcon />;
   if (["wallet", "carteira"].includes(normalized)) return <WalletIcon />;
-  if (["car", "directions-car", "directionscar", "carro", "veiculo", "veículo"].includes(normalized)) return <DirectionsCarIcon />;
-  if (["travel", "flight", "flight-takeoff", "flighttakeoff", "viagem"].includes(normalized)) return <FlightTakeoffIcon />;
-  if (["computer", "notebook", "technology", "tecnologia"].includes(normalized)) return <ComputerIcon />;
+  if (
+    [
+      "car",
+      "directions-car",
+      "directionscar",
+      "carro",
+      "veiculo",
+      "veículo",
+    ].includes(normalized)
+  )
+    return <DirectionsCarIcon />;
+  if (
+    ["travel", "flight", "flight-takeoff", "flighttakeoff", "viagem"].includes(
+      normalized,
+    )
+  )
+    return <FlightTakeoffIcon />;
+  if (["computer", "notebook", "technology", "tecnologia"].includes(normalized))
+    return <ComputerIcon />;
   if (["home", "house", "casa"].includes(normalized)) return <HomeIcon />;
-  if (["education", "school", "estudos"].includes(normalized)) return <SchoolIcon />;
-  if (["security", "reserva", "emergency", "emergencia", "emergência"].includes(normalized)) return <SecurityIcon />;
-  if (["health", "saude", "saúde", "medical"].includes(normalized)) return <MedicalServicesIcon />;
+  if (["education", "school", "estudos"].includes(normalized))
+    return <SchoolIcon />;
+  if (
+    ["security", "reserva", "emergency", "emergencia", "emergência"].includes(
+      normalized,
+    )
+  )
+    return <SecurityIcon />;
+  if (["health", "saude", "saúde", "medical"].includes(normalized))
+    return <MedicalServicesIcon />;
   if (["work", "trabalho"].includes(normalized)) return <WorkIcon />;
   if (["cash", "dinheiro"].includes(normalized)) return <LocalAtmIcon />;
-  if (["investment", "investimento", "trending"].includes(normalized)) return <TrendingUpIcon />;
+  if (["investment", "investimento", "trending"].includes(normalized))
+    return <TrendingUpIcon />;
   if (["shopping", "compras"].includes(normalized)) return <ShoppingBagIcon />;
-  if (["party", "festa", "celebration"].includes(normalized)) return <CelebrationIcon />;
+  if (["party", "festa", "celebration"].includes(normalized))
+    return <CelebrationIcon />;
   if (["beach", "praia"].includes(normalized)) return <BeachAccessIcon />;
   if (["pet", "pets"].includes(normalized)) return <PetsIcon />;
   if (["game", "games"].includes(normalized)) return <SportsEsportsIcon />;
-  if (["dream", "sonho", "favorite"].includes(normalized)) return <FavoriteIcon />;
-  if (["account", "conta"].includes(normalized)) return <AccountBalanceWalletIcon />;
+  if (["dream", "sonho", "favorite"].includes(normalized))
+    return <FavoriteIcon />;
+  if (["account", "conta"].includes(normalized))
+    return <AccountBalanceWalletIcon />;
 
   return <SavingsIcon />;
 }
 
-function getJarIcon(jar: Pick<SavingsJarResponse, "name" | "icon"> | SavingsJarPayload) {
+function getJarIcon(
+  jar: Pick<SavingsJarResponse, "name" | "icon"> | SavingsJarPayload,
+) {
   if (jar.icon) return renderJarIcon(jar.icon);
 
   const text = `${jar.name || ""}`.toLowerCase();
-  if (text.includes("viagem") || text.includes("travel") || text.includes("avi")) return <FlightTakeoffIcon />;
-  if (text.includes("comput") || text.includes("notebook")) return <ComputerIcon />;
-  if (text.includes("reserva") || text.includes("emerg")) return <SecurityIcon />;
-  if (text.includes("carro") || text.includes("veículo")) return <DirectionsCarIcon />;
+  if (
+    text.includes("viagem") ||
+    text.includes("travel") ||
+    text.includes("avi")
+  )
+    return <FlightTakeoffIcon />;
+  if (text.includes("comput") || text.includes("notebook"))
+    return <ComputerIcon />;
+  if (text.includes("reserva") || text.includes("emerg"))
+    return <SecurityIcon />;
+  if (text.includes("carro") || text.includes("veículo"))
+    return <DirectionsCarIcon />;
   return <SavingsIcon />;
 }
 
@@ -126,10 +177,14 @@ export default function SavingsJarsPage() {
   const [selected, setSelected] = useState<SavingsJarResponse | null>(null);
   const [movements, setMovements] = useState<SavingsJarMovementResponse[]>([]);
   const [movement, setMovement] = useState(emptyMovement);
-  const [movementAction, setMovementAction] = useState<MovementAction>("deposit");
+  const [movementAction, setMovementAction] =
+    useState<MovementAction>("deposit");
   const [jarVisualMode, setJarVisualMode] = useState<JarVisualMode>("icon");
   const [jarModalOpen, setJarModalOpen] = useState(false);
   const [movementModalOpen, setMovementModalOpen] = useState(false);
+  const [jarPendingDelete, setJarPendingDelete] =
+    useState<SavingsJarResponse | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
   const selectedId = selected?.id;
@@ -140,18 +195,31 @@ export default function SavingsJarsPage() {
         setJars(savingsJarsResponse.data);
         setAccounts(accountsResponse.data.filter((item) => item.active));
         if (selectedId) {
-          const updated = savingsJarsResponse.data.find((item) => item.id === selectedId) || null;
+          const updated =
+            savingsJarsResponse.data.find((item) => item.id === selectedId) ||
+            null;
           setSelected(updated);
         }
       })
-      .catch((error) => toast.error(getErrorMessage(error, "Não foi possível carregar os cofrinhos.")));
+      .catch((error) =>
+        toast.error(
+          getErrorMessage(error, "Não foi possível carregar os cofrinhos."),
+        ),
+      );
   }, [selectedId]);
 
   const loadMovementsById = useCallback((jarId: number) => {
     api
       .listSavingsJarMovements(jarId)
       .then((response) => setMovements(response.data))
-      .catch((error) => toast.error(getErrorMessage(error, "Não foi possível carregar o extrato do cofrinho.")));
+      .catch((error) =>
+        toast.error(
+          getErrorMessage(
+            error,
+            "Não foi possível carregar o extrato do cofrinho.",
+          ),
+        ),
+      );
   }, []);
 
   const selectJar = useCallback(
@@ -176,9 +244,18 @@ export default function SavingsJarsPage() {
     load();
   }, [load]);
 
-  const totalSaved = useMemo(() => jars.reduce((sum, jar) => sum + Number(jar.currentAmount || 0), 0), [jars]);
-  const totalYield = useMemo(() => jars.reduce((sum, jar) => sum + Number(jar.totalYield || 0), 0), [jars]);
-  const totalTarget = useMemo(() => jars.reduce((sum, jar) => sum + Number(jar.targetAmount || 0), 0), [jars]);
+  const totalSaved = useMemo(
+    () => jars.reduce((sum, jar) => sum + Number(jar.currentAmount || 0), 0),
+    [jars],
+  );
+  const totalYield = useMemo(
+    () => jars.reduce((sum, jar) => sum + Number(jar.totalYield || 0), 0),
+    [jars],
+  );
+  const totalTarget = useMemo(
+    () => jars.reduce((sum, jar) => sum + Number(jar.targetAmount || 0), 0),
+    [jars],
+  );
 
   const yieldChart = useMemo(() => {
     const yieldMovements = movements
@@ -192,8 +269,14 @@ export default function SavingsJarsPage() {
           cumulative += Number(item.amount || 0);
           return formatDate(item.occurredOn).slice(0, 5);
         }),
-        data: yieldMovements.map((_, index) => yieldMovements.slice(0, index + 1).reduce((sum, item) => sum + Number(item.amount || 0), 0)),
-        title: selected ? `Evolução do rendimento: ${selected.name}` : "Evolução do rendimento",
+        data: yieldMovements.map((_, index) =>
+          yieldMovements
+            .slice(0, index + 1)
+            .reduce((sum, item) => sum + Number(item.amount || 0), 0),
+        ),
+        title: selected
+          ? `Evolução do rendimento: ${selected.name}`
+          : "Evolução do rendimento",
       };
     }
 
@@ -210,7 +293,11 @@ export default function SavingsJarsPage() {
       plotOptions: { bar: { borderRadius: 8, columnWidth: "42%" } },
       dataLabels: { enabled: false },
       grid: { borderColor: "#E2E8F0" },
-      xaxis: { categories: yieldChart.labels, axisBorder: { show: false }, axisTicks: { show: false } },
+      xaxis: {
+        categories: yieldChart.labels,
+        axisBorder: { show: false },
+        axisTicks: { show: false },
+      },
       yaxis: { labels: { formatter: (value: number) => formatMoney(value) } },
       tooltip: { y: { formatter: (value: number) => formatMoney(value) } },
     }),
@@ -266,8 +353,12 @@ export default function SavingsJarsPage() {
         icon: form.icon || "savings",
         targetAmount: Number(form.targetAmount || 0),
         currentAmount: editing ? undefined : Number(form.currentAmount || 0),
-        currentYieldAmount: editing ? undefined : Number(form.currentYieldAmount || 0),
-        linkedAccountId: form.linkedAccountId ? Number(form.linkedAccountId) : null,
+        currentYieldAmount: editing
+          ? undefined
+          : Number(form.currentYieldAmount || 0),
+        linkedAccountId: form.linkedAccountId
+          ? Number(form.linkedAccountId)
+          : null,
         targetDate: form.targetDate || null,
         yieldStartDate: form.yieldStartDate || todayISO(),
         yieldPercentage: Number(form.yieldPercentage || 0),
@@ -291,6 +382,40 @@ export default function SavingsJarsPage() {
     },
     [editing, form, jarVisualMode, load, resetJarForm],
   );
+
+  const askDeleteJar = useCallback((jar: SavingsJarResponse) => {
+    setJarPendingDelete(jar);
+  }, []);
+
+  const cancelDeleteJar = useCallback(() => {
+    if (!deletingId) {
+      setJarPendingDelete(null);
+    }
+  }, [deletingId]);
+
+  const confirmDeleteJar = useCallback(async () => {
+    if (!jarPendingDelete || deletingId) return;
+
+    setDeletingId(jarPendingDelete.id);
+    try {
+      await api.deleteSavingsJar(jarPendingDelete.id);
+      toast.success("Cofrinho excluído.");
+
+      if (selected?.id === jarPendingDelete.id) {
+        setSelected(null);
+        setMovements([]);
+      }
+
+      setJarPendingDelete(null);
+      load();
+    } catch (error) {
+      toast.error(
+        getErrorMessage(error, "Não foi possível excluir o cofrinho."),
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }, [deletingId, jarPendingDelete, load, selected?.id]);
 
   const openMovementModal = useCallback(
     (jar: SavingsJarResponse, action: MovementAction) => {
@@ -316,10 +441,17 @@ export default function SavingsJarsPage() {
     }
 
     try {
-      const payload = { ...movement, amount: Number(movement.amount), source: "MANUAL" };
-      if (movementAction === "deposit") await api.depositSavingsJar(selected.id, payload);
-      if (movementAction === "withdraw") await api.withdrawSavingsJar(selected.id, payload);
-      if (movementAction === "yield") await api.yieldSavingsJar(selected.id, payload);
+      const payload = {
+        ...movement,
+        amount: Number(movement.amount),
+        source: "MANUAL",
+      };
+      if (movementAction === "deposit")
+        await api.depositSavingsJar(selected.id, payload);
+      if (movementAction === "withdraw")
+        await api.withdrawSavingsJar(selected.id, payload);
+      if (movementAction === "yield")
+        await api.yieldSavingsJar(selected.id, payload);
       toast.success("Movimentação registrada.");
       closeMovementModal();
       load();
@@ -327,7 +459,14 @@ export default function SavingsJarsPage() {
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
-  }, [closeMovementModal, load, loadMovementsById, movement, movementAction, selected]);
+  }, [
+    closeMovementModal,
+    load,
+    loadMovementsById,
+    movement,
+    movementAction,
+    selected,
+  ]);
 
   const applyYield = useCallback(
     async (jar: SavingsJarResponse) => {
@@ -348,13 +487,24 @@ export default function SavingsJarsPage() {
       <section className="module-heading-row savings-heading-row">
         <div>
           <h1>Meus Cofrinhos</h1>
-          <p>Gerencie suas metas financeiras, rendimentos e movimentações com precisão.</p>
+          <p>
+            Gerencie suas metas financeiras, rendimentos e movimentações com
+            precisão.
+          </p>
         </div>
         <div className="savings-heading-actions">
-          <button className="btn btn-ghost" onClick={applyPendingYields} type="button">
+          <button
+            className="btn btn-ghost"
+            onClick={applyPendingYields}
+            type="button"
+          >
             <AutoGraphIcon /> Aplicar rendimentos
           </button>
-          <button className="btn btn-primary" onClick={openCreateModal} type="button">
+          <button
+            className="btn btn-primary"
+            onClick={openCreateModal}
+            type="button"
+          >
             <AddIcon /> Novo cofrinho
           </button>
         </div>
@@ -378,37 +528,75 @@ export default function SavingsJarsPage() {
       {jars.length ? (
         <section className="goal-card-grid">
           {jars.map((jar) => (
-            <article className="goal-card" key={jar.id} onClick={() => selectJar(jar)}>
+            <article
+              className="goal-card"
+              key={jar.id}
+              onClick={() => selectJar(jar)}
+            >
               <div className="goal-card-top">
-                <span className="goal-icon" style={{ background: `${jar.color || "#2563EB"}16`, color: jar.color || "#2563EB" }}>
-                  {jar.imageUrl ? <img src={jar.imageUrl} alt={jar.name} /> : getJarIcon(jar)}
-                </span>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    edit(jar);
+                <span
+                  className="goal-icon"
+                  style={{
+                    background: `${jar.color || "#2563EB"}16`,
+                    color: jar.color || "#2563EB",
                   }}
-                  title="Editar cofrinho"
                 >
-                  <MoreVertIcon />
-                </button>
+                  {jar.imageUrl ? (
+                    <img src={jar.imageUrl} alt={jar.name} />
+                  ) : (
+                    getJarIcon(jar)
+                  )}
+                </span>
+                <div className="goal-card-top-actions">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      edit(jar);
+                    }}
+                    title="Editar cofrinho"
+                  >
+                    <EditIcon />
+                  </button>
+                  <button
+                    type="button"
+                    className="danger-icon-button"
+                    disabled={deletingId === jar.id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      askDeleteJar(jar);
+                    }}
+                    title="Excluir cofrinho"
+                  >
+                    <DeleteOutlineOutlinedIcon />
+                  </button>
+                </div>
               </div>
 
               <h2>{jar.name}</h2>
-              <p>{jar.description || jar.institutionName || "Objetivo financeiro"}</p>
+              <p>
+                {jar.description ||
+                  jar.institutionName ||
+                  "Objetivo financeiro"}
+              </p>
               <div className="goal-progress-line">
-                <span>{Math.round(Number(jar.progressPercentage || 0))}% Alcançado</span>
+                <span>
+                  {Math.round(Number(jar.progressPercentage || 0))}% Alcançado
+                </span>
                 <small>Meta: {formatMoney(jar.targetAmount)}</small>
               </div>
               <ProgressBar value={jar.progressPercentage} />
-              <strong className="goal-amount">{formatMoney(jar.currentAmount)}</strong>
+              <strong className="goal-amount">
+                {formatMoney(jar.currentAmount)}
+              </strong>
               <small className="goal-yield">
-                Rendeu {formatMoney(jar.totalYield)} · {jar.yieldPercentage}% do CDI
+                Rendeu {formatMoney(jar.totalYield)} · {jar.yieldPercentage}% do
+                CDI
               </small>
               {jar.projectedYieldToday && (
                 <small className="goal-yield projected">
-                  Previsão hoje: {formatMoney(jar.projectedYieldToday.projectedYieldAmount)}
+                  Previsão hoje:{" "}
+                  {formatMoney(jar.projectedYieldToday.projectedYieldAmount)}
                   {jar.projectedYieldToday.estimated ? " estimado" : ""}
                 </small>
               )}
@@ -435,7 +623,11 @@ export default function SavingsJarsPage() {
             </article>
           ))}
 
-          <button className="goal-create-card" type="button" onClick={openCreateModal}>
+          <button
+            className="goal-create-card"
+            type="button"
+            onClick={openCreateModal}
+          >
             <span>
               <AddIcon />
             </span>
@@ -444,7 +636,10 @@ export default function SavingsJarsPage() {
           </button>
         </section>
       ) : (
-        <EmptyState title="Nenhum cofrinho" message="Crie um cofrinho para acompanhar metas e rendimentos como no app do banco." />
+        <EmptyState
+          title="Nenhum cofrinho"
+          message="Crie um cofrinho para acompanhar metas e rendimentos como no app do banco."
+        />
       )}
 
       <section className="savings-lower-grid">
@@ -466,15 +661,25 @@ export default function SavingsJarsPage() {
               height={300}
             />
           ) : (
-            <EmptyState title="Sem rendimento" message="Informe rendimentos ou selecione um cofrinho com histórico." />
+            <EmptyState
+              title="Sem rendimento"
+              message="Informe rendimentos ou selecione um cofrinho com histórico."
+            />
           )}
         </article>
 
         <article className="ai-tip-card">
           <TrendingUpIcon />
           <h2>Dica do IA Master</h2>
-          <p>Use o chat para dizer “guardei R$ 300 no cofrinho Viagem” ou “o cofrinho Reserva rendeu R$ 1,43 hoje”.</p>
-          <button type="button" onClick={() => selected && openMovementModal(selected, "yield")} disabled={!selected}>
+          <p>
+            Use o chat para dizer “guardei R$ 300 no cofrinho Viagem” ou “o
+            cofrinho Reserva rendeu R$ 1,43 hoje”.
+          </p>
+          <button
+            type="button"
+            onClick={() => selected && openMovementModal(selected, "yield")}
+            disabled={!selected}
+          >
             Informar rendimento
           </button>
         </article>
@@ -486,18 +691,36 @@ export default function SavingsJarsPage() {
             <div>
               <h2>Extrato do cofrinho: {selected.name}</h2>
               <small>
-                {selected.institutionName || "Sem instituição"} · {formatMoney(selected.currentAmount)}
+                {selected.institutionName || "Sem instituição"} ·{" "}
+                {formatMoney(selected.currentAmount)}
               </small>
             </div>
             <div className="statement-actions">
-              <button type="button" onClick={() => openMovementModal(selected, "deposit")}>
+              <button
+                type="button"
+                onClick={() => openMovementModal(selected, "deposit")}
+              >
                 Aportar
               </button>
-              <button type="button" onClick={() => openMovementModal(selected, "withdraw")}>
+              <button
+                type="button"
+                onClick={() => openMovementModal(selected, "withdraw")}
+              >
                 Retirar
               </button>
-              <button type="button" onClick={() => openMovementModal(selected, "yield")}>
+              <button
+                type="button"
+                onClick={() => openMovementModal(selected, "yield")}
+              >
                 Rendimento
+              </button>
+              <button
+                className="danger-action"
+                type="button"
+                onClick={() => askDeleteJar(selected)}
+                disabled={deletingId === selected.id}
+              >
+                <DeleteOutlineOutlinedIcon /> Excluir
               </button>
             </div>
           </div>
@@ -520,26 +743,51 @@ export default function SavingsJarsPage() {
                       <td>{item.description || "-"}</td>
                       <td>{formatDate(item.occurredOn)}</td>
                       <td>{formatMoney(item.amount)}</td>
-                      <td>{item.rateApplied ? `${formatPercent(item.rateApplied)}` : "-"}</td>
+                      <td>
+                        {item.rateApplied
+                          ? `${formatPercent(item.rateApplied)}`
+                          : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <EmptyState title="Sem movimentos" message="Nenhum movimento encontrado para este cofrinho." />
+            <EmptyState
+              title="Sem movimentos"
+              message="Nenhum movimento encontrado para este cofrinho."
+            />
           )}
         </section>
       )}
 
-      <Modal open={jarModalOpen} onClose={resetJarForm} aria-labelledby="savings-jar-modal-title">
+      <ConfirmDialog
+        open={Boolean(jarPendingDelete)}
+        title="Excluir cofrinho"
+        message={
+          jarPendingDelete
+            ? `Você está prestes a excluir o cofrinho "${jarPendingDelete.name}". O cofrinho e todo o histórico de movimentações dele serão removidos definitivamente.`
+            : ""
+        }
+        onCancel={cancelDeleteJar}
+        onConfirm={confirmDeleteJar}
+      />
+
+      <Modal
+        open={jarModalOpen}
+        onClose={resetJarForm}
+        aria-labelledby="savings-jar-modal-title"
+      >
         <Box className="mm-modal-box wide-modal">
           <div className="modal-heading">
             <div>
               <span>
                 <SavingsIcon /> Cofrinho
               </span>
-              <h2 id="savings-jar-modal-title">{editing ? "Editar cofrinho" : "Novo cofrinho"}</h2>
+              <h2 id="savings-jar-modal-title">
+                {editing ? "Editar cofrinho" : "Novo cofrinho"}
+              </h2>
             </div>
             <button type="button" onClick={resetJarForm}>
               <CloseIcon />
@@ -553,7 +801,9 @@ export default function SavingsJarsPage() {
                 <input
                   required
                   value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
+                  onChange={(event) =>
+                    setForm({ ...form, name: event.target.value })
+                  }
                   placeholder="Reserva, Viagem, Carro"
                 />
               </label>
@@ -561,7 +811,9 @@ export default function SavingsJarsPage() {
                 Banco/instituição
                 <input
                   value={form.institutionName || ""}
-                  onChange={(event) => setForm({ ...form, institutionName: event.target.value })}
+                  onChange={(event) =>
+                    setForm({ ...form, institutionName: event.target.value })
+                  }
                   placeholder="Itaú, Nubank, PicPay"
                 />
               </label>
@@ -569,7 +821,9 @@ export default function SavingsJarsPage() {
                 Descrição
                 <input
                   value={form.description || ""}
-                  onChange={(event) => setForm({ ...form, description: event.target.value })}
+                  onChange={(event) =>
+                    setForm({ ...form, description: event.target.value })
+                  }
                   placeholder="Objetivo financeiro"
                 />
               </label>
@@ -578,18 +832,36 @@ export default function SavingsJarsPage() {
                 <input
                   inputMode="decimal"
                   value={formatMoneyInput(form.targetAmount)}
-                  onChange={(event) => setForm({ ...form, targetAmount: parseMoneyInput(event.target.value) })}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      targetAmount: parseMoneyInput(event.target.value),
+                    })
+                  }
                 />
               </label>
               <label>
                 Data alvo
-                <input type="date" value={form.targetDate || ""} onChange={(event) => setForm({ ...form, targetDate: event.target.value })} />
+                <input
+                  type="date"
+                  value={form.targetDate || ""}
+                  onChange={(event) =>
+                    setForm({ ...form, targetDate: event.target.value })
+                  }
+                />
               </label>
               <label>
                 Conta vinculada
                 <select
                   value={form.linkedAccountId || ""}
-                  onChange={(event) => setForm({ ...form, linkedAccountId: event.target.value ? Number(event.target.value) : null })}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      linkedAccountId: event.target.value
+                        ? Number(event.target.value)
+                        : null,
+                    })
+                  }
                 >
                   <option value="">Nenhuma</option>
                   {accounts.map((account) => (
@@ -606,7 +878,12 @@ export default function SavingsJarsPage() {
                     <input
                       inputMode="decimal"
                       value={formatMoneyInput(form.currentAmount)}
-                      onChange={(event) => setForm({ ...form, currentAmount: parseMoneyInput(event.target.value) })}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          currentAmount: parseMoneyInput(event.target.value),
+                        })
+                      }
                     />
                   </label>
                   <label>
@@ -614,7 +891,14 @@ export default function SavingsJarsPage() {
                     <input
                       inputMode="decimal"
                       value={formatMoneyInput(form.currentYieldAmount)}
-                      onChange={(event) => setForm({ ...form, currentYieldAmount: parseMoneyInput(event.target.value) })}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          currentYieldAmount: parseMoneyInput(
+                            event.target.value,
+                          ),
+                        })
+                      }
                     />
                   </label>
                 </>
@@ -628,12 +912,20 @@ export default function SavingsJarsPage() {
                       className={jarVisualMode === "icon" ? "active" : ""}
                       onClick={() => {
                         setJarVisualMode("icon");
-                        setForm({ ...form, imageUrl: "", icon: form.icon || "savings" });
+                        setForm({
+                          ...form,
+                          imageUrl: "",
+                          icon: form.icon || "savings",
+                        });
                       }}
                     >
                       Ícone MUI
                     </button>
-                    <button type="button" className={jarVisualMode === "image" ? "active" : ""} onClick={() => setJarVisualMode("image")}>
+                    <button
+                      type="button"
+                      className={jarVisualMode === "image" ? "active" : ""}
+                      onClick={() => setJarVisualMode("image")}
+                    >
                       URL de imagem
                     </button>
                   </div>
@@ -641,12 +933,24 @@ export default function SavingsJarsPage() {
 
                 {jarVisualMode === "image" ? (
                   <div className="jar-image-url-row">
-                    <span className="jar-visual-preview" style={{ background: `${form.color || "#2563EB"}16`, color: form.color || "#2563EB" }}>
-                      {form.imageUrl ? <img src={form.imageUrl} alt="Prévia do cofrinho" /> : getJarIcon(form)}
+                    <span
+                      className="jar-visual-preview"
+                      style={{
+                        background: `${form.color || "#2563EB"}16`,
+                        color: form.color || "#2563EB",
+                      }}
+                    >
+                      {form.imageUrl ? (
+                        <img src={form.imageUrl} alt="Prévia do cofrinho" />
+                      ) : (
+                        getJarIcon(form)
+                      )}
                     </span>
                     <input
                       value={form.imageUrl || ""}
-                      onChange={(event) => setForm({ ...form, imageUrl: event.target.value })}
+                      onChange={(event) =>
+                        setForm({ ...form, imageUrl: event.target.value })
+                      }
                       placeholder="https://..."
                     />
                   </div>
@@ -657,10 +961,19 @@ export default function SavingsJarsPage() {
                         key={option.value}
                         type="button"
                         className={form.icon === option.value ? "active" : ""}
-                        onClick={() => setForm({ ...form, icon: option.value, imageUrl: "" })}
+                        onClick={() =>
+                          setForm({ ...form, icon: option.value, imageUrl: "" })
+                        }
                         title={option.label}
                       >
-                        <span style={{ background: `${form.color || "#2563EB"}16`, color: form.color || "#2563EB" }}>{option.icon}</span>
+                        <span
+                          style={{
+                            background: `${form.color || "#2563EB"}16`,
+                            color: form.color || "#2563EB",
+                          }}
+                        >
+                          {option.icon}
+                        </span>
                         {option.label}
                       </button>
                     ))}
@@ -670,13 +983,32 @@ export default function SavingsJarsPage() {
               <label>
                 Cor
                 <div className="theme-color-input embedded-color-input">
-                  <input type="color" value={form.color || "#2563EB"} onChange={(event) => setForm({ ...form, color: event.target.value })} />
-                  <input value={form.color || "#2563EB"} onChange={(event) => setForm({ ...form, color: event.target.value })} />
+                  <input
+                    type="color"
+                    value={form.color || "#2563EB"}
+                    onChange={(event) =>
+                      setForm({ ...form, color: event.target.value })
+                    }
+                  />
+                  <input
+                    value={form.color || "#2563EB"}
+                    onChange={(event) =>
+                      setForm({ ...form, color: event.target.value })
+                    }
+                  />
                 </div>
               </label>
               <label>
                 Tipo de rendimento
-                <select value={form.yieldCalculationType} onChange={(event) => setForm({ ...form, yieldCalculationType: event.target.value as any })}>
+                <select
+                  value={form.yieldCalculationType}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      yieldCalculationType: event.target.value as any,
+                    })
+                  }
+                >
                   <option value="CDI_PERCENTAGE">Percentual do CDI</option>
                   <option value="MANUAL">Manual</option>
                 </select>
@@ -687,7 +1019,12 @@ export default function SavingsJarsPage() {
                   type="number"
                   step="0.01"
                   value={form.yieldPercentage || 0}
-                  onChange={(event) => setForm({ ...form, yieldPercentage: Number(event.target.value) })}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      yieldPercentage: Number(event.target.value),
+                    })
+                  }
                 />
               </label>
               <label>
@@ -695,7 +1032,9 @@ export default function SavingsJarsPage() {
                 <input
                   type="date"
                   value={form.yieldStartDate || todayISO()}
-                  onChange={(event) => setForm({ ...form, yieldStartDate: event.target.value })}
+                  onChange={(event) =>
+                    setForm({ ...form, yieldStartDate: event.target.value })
+                  }
                 />
               </label>
             </div>
@@ -705,7 +1044,9 @@ export default function SavingsJarsPage() {
                 <input
                   type="checkbox"
                   checked={Boolean(form.yieldEnabled)}
-                  onChange={(event) => setForm({ ...form, yieldEnabled: event.target.checked })}
+                  onChange={(event) =>
+                    setForm({ ...form, yieldEnabled: event.target.checked })
+                  }
                 />{" "}
                 Rendimento habilitado
               </label>
@@ -713,7 +1054,9 @@ export default function SavingsJarsPage() {
                 <input
                   type="checkbox"
                   checked={Boolean(form.businessDaysOnly)}
-                  onChange={(event) => setForm({ ...form, businessDaysOnly: event.target.checked })}
+                  onChange={(event) =>
+                    setForm({ ...form, businessDaysOnly: event.target.checked })
+                  }
                 />{" "}
                 Rende apenas em dias úteis
               </label>
@@ -721,21 +1064,40 @@ export default function SavingsJarsPage() {
                 <input
                   type="checkbox"
                   checked={Boolean(form.useBrazilianHolidays)}
-                  onChange={(event) => setForm({ ...form, useBrazilianHolidays: event.target.checked })}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      useBrazilianHolidays: event.target.checked,
+                    })
+                  }
                 />{" "}
                 Considerar feriados brasileiros
               </label>
               <label className="checkbox-row">
-                <input type="checkbox" checked={Boolean(form.active)} onChange={(event) => setForm({ ...form, active: event.target.checked })} />{" "}
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.active)}
+                  onChange={(event) =>
+                    setForm({ ...form, active: event.target.checked })
+                  }
+                />{" "}
                 Ativo
               </label>
             </div>
 
             <div className="form-actions modal-actions">
-              <button className="btn btn-ghost" type="button" onClick={resetJarForm}>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={resetJarForm}
+              >
                 Cancelar
               </button>
-              <button className="btn btn-primary" disabled={loading} type="submit">
+              <button
+                className="btn btn-primary"
+                disabled={loading}
+                type="submit"
+              >
                 {editing ? "Salvar cofrinho" : "Criar cofrinho"}
               </button>
             </div>
@@ -743,7 +1105,11 @@ export default function SavingsJarsPage() {
         </Box>
       </Modal>
 
-      <Modal open={movementModalOpen} onClose={closeMovementModal} aria-labelledby="savings-movement-modal-title">
+      <Modal
+        open={movementModalOpen}
+        onClose={closeMovementModal}
+        aria-labelledby="savings-movement-modal-title"
+      >
         <Box className="mm-modal-box compact-modal">
           <div className="modal-heading">
             <div>
@@ -766,21 +1132,42 @@ export default function SavingsJarsPage() {
             <input
               inputMode="decimal"
               value={formatMoneyInput(movement.amount)}
-              onChange={(event) => setMovement({ ...movement, amount: parseMoneyInput(event.target.value) })}
+              onChange={(event) =>
+                setMovement({
+                  ...movement,
+                  amount: parseMoneyInput(event.target.value),
+                })
+              }
             />
             <label>Data</label>
-            <input type="date" value={movement.occurredOn} onChange={(event) => setMovement({ ...movement, occurredOn: event.target.value })} />
+            <input
+              type="date"
+              value={movement.occurredOn}
+              onChange={(event) =>
+                setMovement({ ...movement, occurredOn: event.target.value })
+              }
+            />
             <label>Descrição</label>
             <input
               value={movement.description}
-              onChange={(event) => setMovement({ ...movement, description: event.target.value })}
+              onChange={(event) =>
+                setMovement({ ...movement, description: event.target.value })
+              }
               placeholder="Descrição da movimentação"
             />
             <div className="form-actions modal-actions">
-              <button className="btn btn-ghost" type="button" onClick={closeMovementModal}>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={closeMovementModal}
+              >
                 Cancelar
               </button>
-              <button className="btn btn-primary" type="button" onClick={doMovement}>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={doMovement}
+              >
                 Registrar
               </button>
             </div>

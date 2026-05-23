@@ -15,7 +15,11 @@ export default function Landing() {
     <div className="public-page">
       <header className="public-header">
         <Link to="/" className="public-brand">
-          <span>MM</span>
+          {theme.logoUrl ? (
+            <img src={theme.logoUrl} alt={theme.appName || "Money Master 2"} />
+          ) : (
+            <span>MM</span>
+          )}
           <strong>{theme.appName || "Money Master 2"}</strong>
         </Link>
         <nav>
@@ -37,8 +41,9 @@ export default function Landing() {
           </span>
           <h1>Organize sua vida financeira conversando naturalmente.</h1>
           <p>
-            Registre gastos, receitas, cofrinhos e acompanhe sua saúde financeira com dashboards claros, relatórios e um assistente preparado para
-            entender sua rotina.
+            Registre gastos, receitas, cofrinhos e acompanhe sua saúde
+            financeira com dashboards claros, relatórios e um assistente
+            preparado para entender sua rotina.
           </p>
           <div className="hero-actions">
             <Link className="btn btn-primary btn-large" to="/register">
@@ -94,10 +99,22 @@ export default function Landing() {
 
       <section className="feature-section" id="recursos">
         {[
-          ["Chat financeiro", "Informe gastos e receitas com linguagem natural. A IA interpreta e usa ferramentas do backend."],
-          ["Inserção manual", "Cadastre contas, categorias, transações e cofrinhos quando preferir usar formulários."],
-          ["Cofrinhos", "Acompanhe objetivos, metas, rendimento acumulado e previsão diária por CDI."],
-          ["Tema dinâmico", "Personalize cores, logo e textos da tela de login com prévia em tempo real."],
+          [
+            "Chat financeiro",
+            "Informe gastos e receitas com linguagem natural. A IA interpreta e usa ferramentas do backend.",
+          ],
+          [
+            "Inserção manual",
+            "Cadastre contas, categorias, transações e cofrinhos quando preferir usar formulários.",
+          ],
+          [
+            "Cofrinhos",
+            "Acompanhe objetivos, metas, rendimento acumulado e previsão diária por CDI.",
+          ],
+          [
+            "Tema dinâmico",
+            "Personalize cores, logo e textos da tela de login com prévia em tempo real.",
+          ],
         ].map(([title, text]) => (
           <article className="feature-card" key={title}>
             <h3>{title}</h3>

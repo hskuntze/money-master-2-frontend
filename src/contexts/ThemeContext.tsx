@@ -49,6 +49,18 @@ function applyCssVariables(theme: ThemeResponse) {
     theme.cardColor || defaultTheme.cardColor,
   );
   document.title = theme.appName || defaultTheme.appName;
+  applyFavicon(theme.faviconUrl || defaultTheme.faviconUrl || "/favicon.ico");
+}
+
+function applyFavicon(url?: string | null) {
+  const href = url || "/favicon.ico";
+  let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.href = href;
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

@@ -15,10 +15,26 @@ import { api } from "@/utils/requests";
 
 const colorSections: Array<{
   title: string;
-  fields: Array<keyof Pick<ThemeResponse, "primaryColor" | "secondaryColor" | "accentColor" | "backgroundColor" | "textColor" | "cardColor">>;
+  fields: Array<
+    keyof Pick<
+      ThemeResponse,
+      | "primaryColor"
+      | "secondaryColor"
+      | "accentColor"
+      | "backgroundColor"
+      | "textColor"
+      | "cardColor"
+    >
+  >;
 }> = [
-  { title: "Paleta de cores", fields: ["primaryColor", "secondaryColor", "accentColor"] },
-  { title: "Superfícies e cartões", fields: ["backgroundColor", "cardColor", "textColor"] },
+  {
+    title: "Paleta de cores",
+    fields: ["primaryColor", "secondaryColor", "accentColor"],
+  },
+  {
+    title: "Superfícies e cartões",
+    fields: ["backgroundColor", "cardColor", "textColor"],
+  },
 ];
 
 const labels: Record<string, string> = {
@@ -77,15 +93,27 @@ export default function ThemeSettingsPage() {
   const PreviewCard = ({ large = false }: { large?: boolean }) => (
     <div
       className={`theme-live-card ${large ? "large" : ""}`}
-      style={{ background: form.cardColor, color: form.textColor, borderColor: `${form.secondaryColor}22` }}
+      style={{
+        background: form.cardColor,
+        color: form.textColor,
+        borderColor: `${form.secondaryColor}22`,
+      }}
     >
       <div className="theme-live-header">
         <h3>Dashboard</h3>
-        <span style={{ background: `${form.primaryColor}18`, color: form.primaryColor }}>
+        <span
+          style={{
+            background: `${form.primaryColor}18`,
+            color: form.primaryColor,
+          }}
+        >
           <DashboardIcon />
         </span>
       </div>
-      <article className="theme-live-balance" style={{ background: form.primaryColor }}>
+      <article
+        className="theme-live-balance"
+        style={{ background: form.primaryColor }}
+      >
         <div>
           <span>Saldo Total</span>
           <strong>{formatMoney(45290)}</strong>
@@ -105,9 +133,18 @@ export default function ThemeSettingsPage() {
         </article>
       </div>
       <label>Input exemplo</label>
-      <input readOnly value="Texto focado..." style={{ borderColor: form.primaryColor, color: form.textColor }} />
-      <button style={{ background: form.primaryColor, color: "#fff" }}>Botão primário</button>
-      <button className="preview-secondary-button" style={{ borderColor: form.primaryColor, color: form.primaryColor }}>
+      <input
+        readOnly
+        value="Texto focado..."
+        style={{ borderColor: form.primaryColor, color: form.textColor }}
+      />
+      <button style={{ background: form.primaryColor, color: "#fff" }}>
+        Botão primário
+      </button>
+      <button
+        className="preview-secondary-button"
+        style={{ borderColor: form.primaryColor, color: form.primaryColor }}
+      >
         Botão secundário
       </button>
       <div className="theme-live-typography">
@@ -133,21 +170,56 @@ export default function ThemeSettingsPage() {
             <h2>Identidade</h2>
             <div className="theme-single-field">
               <label>Nome do aplicativo</label>
-              <input value={form.appName || ""} onChange={(event) => update("appName", event.target.value)} />
+              <input
+                value={form.appName || ""}
+                onChange={(event) => update("appName", event.target.value)}
+              />
             </div>
             <div className="theme-two-fields">
               <label>
                 Logo URL
-                <input value={form.logoUrl || ""} onChange={(event) => update("logoUrl", event.target.value)} placeholder="https://..." />
+                <input
+                  value={form.logoUrl || ""}
+                  onChange={(event) => update("logoUrl", event.target.value)}
+                  placeholder="https://.../logo.png"
+                />
               </label>
               <label>
-                Título do login
-                <input value={form.loginTitle || ""} onChange={(event) => update("loginTitle", event.target.value)} />
+                Ícone do navegador (.ico/png/svg)
+                <input
+                  value={form.faviconUrl || ""}
+                  onChange={(event) => update("faviconUrl", event.target.value)}
+                  placeholder="https://.../favicon.ico"
+                />
               </label>
+            </div>
+            <div className="theme-two-fields">
+              <label>
+                Título do login
+                <input
+                  value={form.loginTitle || ""}
+                  onChange={(event) => update("loginTitle", event.target.value)}
+                />
+              </label>
+              <div className="theme-logo-preview">
+                <span>Prévia da marca</span>
+                {form.logoUrl ? (
+                  <img src={form.logoUrl} alt={form.appName} />
+                ) : (
+                  <strong>
+                    {(form.appName || "MM").slice(0, 2).toUpperCase()}
+                  </strong>
+                )}
+              </div>
             </div>
             <label>
               Subtítulo do login
-              <textarea value={form.loginSubtitle || ""} onChange={(event) => update("loginSubtitle", event.target.value)} />
+              <textarea
+                value={form.loginSubtitle || ""}
+                onChange={(event) =>
+                  update("loginSubtitle", event.target.value)
+                }
+              />
             </label>
           </article>
 
@@ -162,9 +234,16 @@ export default function ThemeSettingsPage() {
                       <input
                         type="color"
                         value={(form[field] as string) || "#000000"}
-                        onChange={(event) => update(field, event.target.value as any)}
+                        onChange={(event) =>
+                          update(field, event.target.value as any)
+                        }
                       />
-                      <input value={(form[field] as string) || ""} onChange={(event) => update(field, event.target.value as any)} />
+                      <input
+                        value={(form[field] as string) || ""}
+                        onChange={(event) =>
+                          update(field, event.target.value as any)
+                        }
+                      />
                     </div>
                   </label>
                 ))}
@@ -176,10 +255,18 @@ export default function ThemeSettingsPage() {
             <button className="btn btn-primary" disabled={saving} type="submit">
               Salvar alterações
             </button>
-            <button className="btn btn-ghost" type="button" onClick={() => setPreviewOpen(true)}>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+            >
               <VisibilityIcon /> Visualizar tela cheia
             </button>
-            <button className="theme-restore-button" type="button" onClick={restore}>
+            <button
+              className="theme-restore-button"
+              type="button"
+              onClick={restore}
+            >
               <RestartAltIcon /> Restaurar padrões
             </button>
           </div>
@@ -190,11 +277,17 @@ export default function ThemeSettingsPage() {
             <PaletteIcon /> Visualização em tempo real
           </span>
           <PreviewCard />
-          <small>As alterações feitas aqui são aplicadas globalmente após salvar.</small>
+          <small>
+            As alterações feitas aqui são aplicadas globalmente após salvar.
+          </small>
         </aside>
       </section>
 
-      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} aria-labelledby="theme-preview-title">
+      <Modal
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        aria-labelledby="theme-preview-title"
+      >
         <Box className="mm-modal-box theme-preview-modal">
           <div className="modal-heading">
             <div>

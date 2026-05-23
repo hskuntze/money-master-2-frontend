@@ -7,6 +7,13 @@ export type AccountType =
   | "OTHER";
 export type TransactionType = "INCOME" | "EXPENSE" | "TRANSFER";
 export type TransactionSource = "MANUAL" | "AI_CHAT" | "IMPORTED";
+export type FinancialPeriodStatus = "OPEN" | "SCHEDULED" | "CLOSED";
+export type MonthlyPlanItemStatus =
+  | "PENDING"
+  | "PARTIALLY_PAID"
+  | "PAID"
+  | "CANCELED";
+export type MonthlyPlanItemNature = "FIXED" | "VARIABLE";
 export type SavingsJarYieldCalculationType = "MANUAL" | "CDI_PERCENTAGE";
 export type SavingsJarMovementType =
   | "INITIAL_BALANCE"
@@ -59,6 +66,10 @@ export type FinancialTransactionResponse = {
   source: TransactionSource;
   account: AccountResponse;
   category?: CategoryResponse | null;
+  financialPeriodId?: number | null;
+  financialPeriodName?: string | null;
+  monthlyPlanItemId?: number | null;
+  monthlyPlanItemStatus?: MonthlyPlanItemStatus | null;
   aiRawMessage?: string | null;
   notes?: string | null;
   createdAt?: string;
@@ -68,6 +79,9 @@ export type FinancialTransactionResponse = {
 export type FinancialTransactionPayload = {
   accountId: number;
   categoryId?: number | null;
+  financialPeriodId?: number | null;
+  monthlyPlanItemId?: number | null;
+  clearMonthlyPlanItem?: boolean;
   type: TransactionType;
   description: string;
   amount: number;
@@ -75,6 +89,168 @@ export type FinancialTransactionPayload = {
   source?: TransactionSource;
   aiRawMessage?: string | null;
   notes?: string | null;
+};
+
+export type FinancialPeriodResponse = {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  turnoverDay?: number | null;
+  status: FinancialPeriodStatus;
+  archivedIncomeTotal: number;
+  archivedExpenseTotal: number;
+  archivedTransferTotal: number;
+  archivedNetTotal: number;
+  closedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string | null;
+};
+
+export type FinancialPeriodTurnoverPayload = {
+  turnoverDate: string;
+  newPeriodName?: string | null;
+};
+
+export type FinancialPeriodUpdatePayload = {
+  name?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  turnoverDay?: number | null;
+  status?: FinancialPeriodStatus | null;
+};
+
+export type MonthlyPlanItemResponse = {
+  id: number;
+  financialPeriodId: number;
+  financialPeriodName?: string | null;
+  type: TransactionType;
+  description: string;
+  expectedAmount: number;
+  actualAmount: number;
+  remainingAmount?: number;
+  dueDate: string;
+  paidOn?: string | null;
+  status: MonthlyPlanItemStatus;
+  nature: MonthlyPlanItemNature;
+  recurring: boolean;
+  recurrenceEndDate?: string | null;
+  accountId?: number | null;
+  accountName?: string | null;
+  categoryId?: number | null;
+  categoryName?: string | null;
+  account?: AccountResponse | null;
+  category?: CategoryResponse | null;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string | null;
+};
+
+export type MonthlyPlanItemPayload = {
+  accountId?: number | null;
+  categoryId?: number | null;
+  type: TransactionType;
+  description: string;
+  expectedAmount: number;
+  actualAmount?: number | null;
+  dueDate: string;
+  paidOn?: string | null;
+  status?: MonthlyPlanItemStatus | null;
+  nature?: MonthlyPlanItemNature | null;
+  recurring?: boolean;
+  recurrenceEndDate?: string | null;
+  notes?: string | null;
+};
+
+export type MonthlyPlanItemPaymentPayload = {
+  transactionId?: number | null;
+  accountId?: number | null;
+  categoryId?: number | null;
+  amount?: number | null;
+  occurredOn?: string | null;
+  preferExistingTransaction?: boolean;
+  notes?: string | null;
+};
+
+export type MonthlyPlanItemLinkTransactionPayload = {
+  transactionId: number;
+  copyCategoryFromPlanItem?: boolean;
+  copyAccountFromPlanItem?: boolean;
+  forceRelink?: boolean;
+};
+
+export type MonthlyPlanItemReopenPayload = {
+  deleteLinkedTransactions?: boolean;
+  keepTransactionsUnlinked?: boolean;
+  notes?: string | null;
+};
+
+export type MonthlyPlanItemUnlinkTransactionPayload = {
+  transactionId: number;
+  deleteTransaction?: boolean;
+  notes?: string | null;
+};
+
+export type MonthlyPlanReconcileCandidateResponse = {
+  transactionId?: number | null;
+  transactionDescription?: string | null;
+  transactionAmount?: number | null;
+  transactionDate?: string | null;
+  planItemId?: number | null;
+  planItemDescription?: string | null;
+  expectedAmount?: number | null;
+  dueDate?: string | null;
+  score: number;
+  action: string;
+  executed: boolean;
+  message: string;
+};
+
+export type MonthlyPlanReconcilePayload = {
+  dryRun?: boolean;
+  createMissingPlanItems?: boolean;
+  linkExistingTransactions?: boolean;
+  onlyUnlinkedTransactions?: boolean;
+  defaultNature?: MonthlyPlanItemNature;
+  recurring?: boolean;
+  type?: TransactionType | null;
+  from?: string | null;
+  to?: string | null;
+  createPlanItemsAsPendingOnly?: boolean;
+  deleteSourceTransactionsWhenCreatingPlanItems?: boolean;
+};
+
+export type MonthlyPlanReconcileResponse = {
+  dryRun: boolean;
+  periodId: number;
+  periodName: string;
+  analyzedTransactions: number;
+  matchedTransactions: number;
+  createdPlanItems: number;
+  linkedTransactions: number;
+  ambiguousTransactions: number;
+  ignoredTransactions: number;
+  candidates: MonthlyPlanReconcileCandidateResponse[];
+  message: string;
+  processedAt: string;
+};
+
+export type MonthlyPeriodSummaryResponse = {
+  period: FinancialPeriodResponse;
+  plannedIncomeTotal: number;
+  plannedExpenseTotal: number;
+  paidIncomeTotal: number;
+  paidExpenseTotal: number;
+  pendingIncomeTotal: number;
+  pendingExpenseTotal: number;
+  realizedIncomeTotal: number;
+  realizedExpenseTotal: number;
+  plannedAvailableAmount: number;
+  unplannedIncomeTotal: number;
+  unplannedExpenseTotal: number;
+  projectedAvailableAmount: number;
+  pendingItems: number;
+  paidItems: number;
 };
 
 export type FinancialSummaryResponse = {

@@ -161,11 +161,18 @@ export default function ChatPage() {
             send();
           }}
         >
-          <input
+          <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
             placeholder="Ex.: atualize meus cofrinhos com os saldos reais de hoje"
             disabled={loading}
+            rows={3}
           />
           <button
             className="btn btn-primary"

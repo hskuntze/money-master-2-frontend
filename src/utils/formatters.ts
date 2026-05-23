@@ -45,6 +45,15 @@ export function enumLabel(value?: string | null) {
     YIELD: "Rendimento",
     YIELD_ADJUSTMENT: "Correção de rendimento",
     ADJUSTMENT: "Ajuste",
+    OPEN: "Aberto",
+    SCHEDULED: "Agendado",
+    CLOSED: "Fechado",
+    PENDING: "Pendente",
+    PARTIALLY_PAID: "Pago parcial",
+    PAID: "Pago",
+    CANCELED: "Cancelado",
+    FIXED: "Fixo",
+    VARIABLE: "Variável",
   };
   return value ? labels[value] || value : "-";
 }

@@ -3,28 +3,49 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import CategoryIcon from "@mui/icons-material/Category";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import LogoutIcon from "@mui/icons-material/Logout";
 import PaletteIcon from "@mui/icons-material/Palette";
+import SettingsIcon from "@mui/icons-material/Settings";
 import SavingsIcon from "@mui/icons-material/Savings";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import { useContext } from "react";
+import { ReactNode, useContext } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/contexts/AuthContext";
 import { ThemeContext } from "@/contexts/ThemeContext";
 
-const navItems = [
+type NavItem = {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  permission?: string;
+  anyPermission?: string[];
+};
+
+const navItems: NavItem[] = [
   { to: "/app/dashboard", label: "Início", icon: <DashboardIcon /> },
   { to: "/app/chat", label: "Chat IA", icon: <AutoAwesomeIcon /> },
   { to: "/app/transactions", label: "Transações", icon: <ReceiptLongIcon /> },
   { to: "/app/accounts", label: "Contas", icon: <AccountBalanceWalletIcon /> },
   { to: "/app/categories", label: "Categorias", icon: <CategoryIcon /> },
   { to: "/app/savings-jars", label: "Cofrinhos", icon: <SavingsIcon /> },
+  {
+    to: "/app/monthly-periods",
+    label: "Virada do mês",
+    icon: <EventRepeatIcon />,
+  },
   { to: "/app/reports", label: "Relatórios", icon: <BarChartIcon /> },
   {
     to: "/app/theme",
     label: "Tema",
     icon: <PaletteIcon />,
     permission: "THEME_MANAGE",
+  },
+  {
+    to: "/app/system",
+    label: "Sistema",
+    icon: <SettingsIcon />,
+    anyPermission: ["LOG_READ", "EMAIL_SETTINGS_MANAGE"],
   },
 ];
 
@@ -57,8 +78,12 @@ export default function AppLayout() {
           {navItems
             .filter(
               (item) =>
-                !item.permission ||
-                user?.permissions?.includes(item.permission),
+                (!item.permission ||
+                  user?.permissions?.includes(item.permission)) &&
+                (!item.anyPermission ||
+                  item.anyPermission.some((permission) =>
+                    user?.permissions?.includes(permission),
+                  )),
             )
             .map((item) => (
               <NavLink
