@@ -265,7 +265,7 @@ export default function UserProfilePage() {
         </div>
 
         <div className="panel user-profile-personal-card">
-          <div className="section-heading compact-heading">
+          <div className="compact-heading">
             <span className="eyebrow">Dados cadastrais</span>
             <h2>Informações pessoais</h2>
             <p>Estes dados aparecem no menu, no topo do sistema e nas áreas administrativas.</p>
@@ -288,7 +288,7 @@ export default function UserProfilePage() {
         </div>
 
         <div className="panel profile-avatar-editor-card">
-          <div className="section-heading compact-heading">
+          <div className="compact-heading">
             <span className="eyebrow">Foto do usuário</span>
             <h2>Recorte e redimensione antes de salvar</h2>
             <p>O círculo abaixo mostra exatamente como a imagem será exibida no sistema.</p>
@@ -365,7 +365,7 @@ export default function UserProfilePage() {
       </section>
 
       <form className="panel financial-profile-form user-financial-profile-form" onSubmit={submitFinancialProfile}>
-        <div className="section-heading compact-heading">
+        <div className="compact-heading">
           <span className="eyebrow">Contexto financeiro</span>
           <h2>Dados para recomendações mais responsáveis</h2>
           <p>Essas informações ajudam a IA a orientar melhor, sempre em caráter educacional.</p>

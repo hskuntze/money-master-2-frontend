@@ -1,11 +1,6 @@
 import axios, { AxiosRequestConfig } from "axios";
 import { API_URL } from "@/config/env";
-import {
-  AuthLoginRequest,
-  AuthRegisterRequest,
-  AuthResponse,
-  UserResponse,
-} from "@/types/auth";
+import { AuthLoginRequest, AuthRegisterRequest, AuthResponse, UserResponse } from "@/types/auth";
 import { getAuthData } from "@/utils/storage";
 import { ThemeResponse, ThemeUpdateRequest } from "@/types/theme";
 import {
@@ -30,6 +25,7 @@ import {
   FinancialSummaryResponse,
   FinancialTransactionPayload,
   FinancialTransactionResponse,
+  InstallmentEntryPaymentPayload,
   InstallmentPurchasePayload,
   InstallmentPurchaseResponse,
   UserFinancialProfilePayload,
@@ -64,11 +60,7 @@ export type RequestConfig = AxiosRequestConfig & {
 
 export function resolveApiAssetUrl(url?: string | null) {
   if (!url) return undefined;
-  if (
-    /^(https?:)?\/\//.test(url) ||
-    url.startsWith("data:") ||
-    url.startsWith("blob:")
-  ) {
+  if (/^(https?:)?\/\//.test(url) || url.startsWith("data:") || url.startsWith("blob:")) {
     return url;
   }
   return `${API_URL}${url.startsWith("/") ? url : `/${url}`}`;
@@ -78,9 +70,7 @@ export function requestBackend<T = any>(config: RequestConfig) {
   const auth = getAuthData();
   const headers = {
     ...config.headers,
-    ...(!config.skipAuth && auth.accessToken
-      ? { Authorization: `Bearer ${auth.accessToken}` }
-      : {}),
+    ...(!config.skipAuth && auth.accessToken ? { Authorization: `Bearer ${auth.accessToken}` } : {}),
   };
 
   return axios.request<T>({
@@ -116,8 +106,7 @@ export function requestBackendRefreshToken(refreshToken: string) {
 
 export const api = {
   me: () => requestBackend<UserResponse>({ method: "GET", url: "/auth/me" }),
-  updateCurrentUserProfile: (data: { name: string }) =>
-    requestBackend<UserResponse>({ method: "PUT", url: "/users/me", data }),
+  updateCurrentUserProfile: (data: { name: string }) => requestBackend<UserResponse>({ method: "PUT", url: "/users/me", data }),
   uploadCurrentUserAvatar: (file: Blob) => {
     const formData = new FormData();
     formData.append("file", file, "avatar.png");
@@ -128,8 +117,7 @@ export const api = {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
-  deleteCurrentUserAvatar: () =>
-    requestBackend<UserResponse>({ method: "DELETE", url: "/users/me/avatar" }),
+  deleteCurrentUserAvatar: () => requestBackend<UserResponse>({ method: "DELETE", url: "/users/me/avatar" }),
   confirmEmail: (token: string) =>
     requestBackend<{ message: string }>({
       method: "GET",
@@ -193,15 +181,13 @@ export const api = {
       url: `/admin/logs/failures/${id}`,
     }),
 
-  listAccounts: () =>
-    requestBackend<AccountResponse[]>({ method: "GET", url: "/accounts" }),
+  listAccounts: () => requestBackend<AccountResponse[]>({ method: "GET", url: "/accounts" }),
   getAccountBalance: (id: number) =>
     requestBackend<AccountBalanceResponse>({
       method: "GET",
       url: `/accounts/${id}/balance`,
     }),
-  createAccount: (data: Partial<AccountResponse>) =>
-    requestBackend<AccountResponse>({ method: "POST", url: "/accounts", data }),
+  createAccount: (data: Partial<AccountResponse>) => requestBackend<AccountResponse>({ method: "POST", url: "/accounts", data }),
   updateAccount: (id: number, data: Partial<AccountResponse>) =>
     requestBackend<AccountResponse>({
       method: "PUT",
@@ -297,10 +283,7 @@ export const api = {
       method: "GET",
       url: `/financial-periods/${periodId}/summary`,
     }),
-  listMonthlyPlanItems: (
-    periodId: number,
-    status?: MonthlyPlanItemStatus | "",
-  ) =>
+  listMonthlyPlanItems: (periodId: number, status?: MonthlyPlanItemStatus | "") =>
     requestBackend<MonthlyPlanItemResponse[]>({
       method: "GET",
       url: `/financial-periods/${periodId}/plan-items`,
@@ -312,10 +295,7 @@ export const api = {
       url: `/financial-periods/${periodId}/plan-items`,
       data,
     }),
-  updateMonthlyPlanItem: (
-    itemId: number,
-    data: Partial<MonthlyPlanItemPayload>,
-  ) =>
+  updateMonthlyPlanItem: (itemId: number, data: Partial<MonthlyPlanItemPayload>) =>
     requestBackend<MonthlyPlanItemResponse>({
       method: "PUT",
       url: `/financial-periods/plan-items/${itemId}`,
@@ -339,38 +319,41 @@ export const api = {
       url: `/financial-periods/plan-items/${itemId}/reopen`,
       data,
     }),
-  unlinkTransactionFromMonthlyPlanItem: (
-    itemId: number,
-    data: MonthlyPlanItemUnlinkTransactionPayload,
-  ) =>
+  unlinkTransactionFromMonthlyPlanItem: (itemId: number, data: MonthlyPlanItemUnlinkTransactionPayload) =>
     requestBackend<MonthlyPlanItemResponse>({
       method: "POST",
       url: `/financial-periods/plan-items/${itemId}/unlink-transaction`,
       data,
     }),
-  linkTransactionToMonthlyPlanItem: (
-    itemId: number,
-    data: MonthlyPlanItemLinkTransactionPayload,
-  ) =>
+  linkTransactionToMonthlyPlanItem: (itemId: number, data: MonthlyPlanItemLinkTransactionPayload) =>
     requestBackend<MonthlyPlanItemResponse>({
       method: "POST",
       url: `/financial-periods/plan-items/${itemId}/link-transaction`,
       data,
     }),
-  listUnlinkedPeriodTransactions: (
-    periodId: number,
-    type?: TransactionType,
-    onlyUnlinked = true,
-  ) =>
+
+  listInvoiceChildCandidates: (invoiceItemId: number) =>
+    requestBackend<MonthlyPlanItemResponse[]>({
+      method: "GET",
+      url: `/financial-periods/plan-items/${invoiceItemId}/child-candidates`,
+    }),
+  linkMonthlyPlanItemToInvoice: (invoiceItemId: number, childItemId: number) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "POST",
+      url: `/financial-periods/plan-items/${invoiceItemId}/children/${childItemId}`,
+    }),
+  unlinkMonthlyPlanItemFromInvoice: (childItemId: number) =>
+    requestBackend<MonthlyPlanItemResponse>({
+      method: "DELETE",
+      url: `/financial-periods/plan-items/${childItemId}/parent`,
+    }),
+  listUnlinkedPeriodTransactions: (periodId: number, type?: TransactionType, onlyUnlinked = true) =>
     requestBackend<FinancialTransactionResponse[]>({
       method: "GET",
       url: `/financial-periods/${periodId}/unlinked-transactions`,
       params: { type, onlyUnlinked },
     }),
-  reconcileMonthlyPlanTransactions: (
-    periodId: number,
-    data: MonthlyPlanReconcilePayload,
-  ) =>
+  reconcileMonthlyPlanTransactions: (periodId: number, data: MonthlyPlanReconcilePayload) =>
     requestBackend<MonthlyPlanReconcileResponse>({
       method: "POST",
       url: `/financial-periods/${periodId}/reconcile-transactions`,
@@ -446,6 +429,17 @@ export const api = {
       method: "POST",
       url: "/installment-purchases",
       data,
+    }),
+  markInstallmentEntryPaid: (entryId: number, data?: InstallmentEntryPaymentPayload) =>
+    requestBackend<InstallmentPurchaseResponse>({
+      method: "POST",
+      url: `/installment-purchases/entries/${entryId}/payment`,
+      data: data || {},
+    }),
+  reopenInstallmentEntryPayment: (entryId: number) =>
+    requestBackend<InstallmentPurchaseResponse>({
+      method: "DELETE",
+      url: `/installment-purchases/entries/${entryId}/payment`,
     }),
   cancelInstallmentPurchase: (id: number) =>
     requestBackend<{ message: string }>({

@@ -30,7 +30,7 @@ export const guidedTourSteps: TourStep[] = [
     selector: "[data-tour='monthly-plan-items']",
     title: "Receitas e contas do mês",
     description: "Cadastre rendas, contas fixas e gastos variáveis planejados. Essa é a base do planejamento mensal.",
-    preferredPosition: "top",
+    preferredPosition: "bottom",
   },
   {
     id: "transactions-history",

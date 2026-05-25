@@ -1,12 +1,6 @@
 import CloseIcon from "@mui/icons-material/Close";
-import {
-  CSSProperties,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { api } from "@/utils/requests";
@@ -26,18 +20,22 @@ type GuidedTourProps = {
   onSkipped?: () => void;
 };
 
-const sleep = (ms: number) =>
-  new Promise((resolve) => window.setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
-function calculatePopupStyle(
-  rect: HighlightRect | null,
-  step: TourStep,
-): CSSProperties {
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+function calculatePopupStyle(rect: HighlightRect | null, step: TourStep): CSSProperties {
   const margin = 18;
-  const width = 340;
+  const width = Math.min(380, window.innerWidth - margin * 2);
+  const estimatedHeight = 260;
 
   if (!rect) {
-    return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
+    return {
+      top: "50%",
+      left: "50%",
+      width,
+      transform: "translate(-50%, -50%)",
+    };
   }
 
   const preferred = step.preferredPosition || "bottom";
@@ -45,43 +43,39 @@ function calculatePopupStyle(
   const viewportHeight = window.innerHeight;
 
   let top = rect.top + rect.height + margin;
-  let left = rect.left;
+  let left = rect.left + rect.width / 2 - width / 2;
 
   if (preferred === "top") {
-    top = rect.top - 325 - margin;
+    top = rect.top - estimatedHeight - margin;
   }
 
   if (preferred === "left") {
-    top = rect.top;
+    top = rect.top + rect.height / 2 - estimatedHeight / 2;
     left = rect.left - width - margin;
   }
 
   if (preferred === "right") {
-    top = rect.top;
+    top = rect.top + rect.height / 2 - estimatedHeight / 2;
     left = rect.left + rect.width + margin;
   }
 
-  if (left + width > viewportWidth - margin) {
-    left = viewportWidth - width - margin;
-  }
-
-  if (left < margin) {
-    left = margin;
-  }
-
-  if (top < margin) {
+  if (top < margin && preferred === "top") {
     top = rect.top + rect.height + margin;
   }
 
-  if (top > viewportHeight - 240) {
-    top = Math.max(margin, viewportHeight - 240);
+  if (top + estimatedHeight > viewportHeight - margin && preferred === "bottom") {
+    top = rect.top - estimatedHeight - margin;
   }
 
-  return { top, left, width };
+  return {
+    top: clamp(top, margin, Math.max(margin, viewportHeight - estimatedHeight - margin)),
+    left: clamp(left, margin, Math.max(margin, viewportWidth - width - margin)),
+    width,
+  };
 }
 
 async function findElement(selector: string) {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0; attempt < 24; attempt += 1) {
     const element = document.querySelector(selector) as HTMLElement | null;
 
     if (element) {
@@ -94,12 +88,28 @@ async function findElement(selector: string) {
   return null;
 }
 
-export default function GuidedTour({
-  open,
-  onClose,
-  onCompleted,
-  onSkipped,
-}: GuidedTourProps) {
+function scrimStyles(rect: HighlightRect | null): CSSProperties[] {
+  if (!rect) {
+    return [{ inset: 0 }];
+  }
+
+  const padding = 10;
+  const top = Math.max(0, rect.top - padding);
+  const left = Math.max(0, rect.left - padding);
+  const right = Math.max(0, window.innerWidth - rect.left - rect.width - padding);
+  const bottom = Math.max(0, window.innerHeight - rect.top - rect.height - padding);
+  const width = rect.width + padding * 2;
+  const height = rect.height + padding * 2;
+
+  return [
+    { top: 0, left: 0, right: 0, height: top },
+    { top, left: 0, width: left, height },
+    { top, right: 0, width: right, height },
+    { left: 0, right: 0, bottom: 0, height: bottom },
+  ];
+}
+
+export default function GuidedTour({ open, onClose, onCompleted, onSkipped }: GuidedTourProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -133,10 +143,7 @@ export default function GuidedTour({
     [clearActiveHighlight],
   );
 
-  const positionStyle = useMemo(
-    () => calculatePopupStyle(rect, step),
-    [rect, step],
-  );
+  const positionStyle = useMemo(() => calculatePopupStyle(rect, step), [rect, step]);
 
   const refreshTarget = useCallback(async () => {
     if (!open || !step) {
@@ -148,6 +155,7 @@ export default function GuidedTour({
 
     if (location.pathname !== step.route) {
       clearActiveHighlight();
+      setRect(null);
       navigate(step.route);
       return;
     }
@@ -169,7 +177,7 @@ export default function GuidedTour({
       inline: "center",
     });
 
-    await sleep(220);
+    await sleep(240);
 
     const nextRect = element.getBoundingClientRect();
 
@@ -179,14 +187,7 @@ export default function GuidedTour({
       width: nextRect.width,
       height: nextRect.height,
     });
-  }, [
-    applyActiveHighlight,
-    clearActiveHighlight,
-    location.pathname,
-    navigate,
-    open,
-    step,
-  ]);
+  }, [applyActiveHighlight, clearActiveHighlight, location.pathname, navigate, open, step]);
 
   useEffect(() => {
     refreshTarget();
@@ -226,9 +227,7 @@ export default function GuidedTour({
   }, [clearActiveHighlight]);
 
   const persistProgress = useCallback((stepId: string) => {
-    api
-      .updateTourState({ action: "PROGRESS", lastStepKey: stepId })
-      .catch(() => undefined);
+    api.updateTourState({ action: "PROGRESS", lastStepKey: stepId }).catch(() => undefined);
   }, []);
 
   const next = async () => {
@@ -239,9 +238,7 @@ export default function GuidedTour({
         await api.completeGuidedTour();
         toast.success("Tour concluído. Você pode reabri-lo pela Ajuda.");
       } catch {
-        toast.warning(
-          "Tour concluído localmente, mas não foi possível salvar o estado agora.",
-        );
+        toast.warning("Tour concluído localmente, mas não foi possível salvar o estado agora.");
       }
 
       clearActiveHighlight();
@@ -250,10 +247,12 @@ export default function GuidedTour({
       return;
     }
 
+    setRect(null);
     setIndex((current) => current + 1);
   };
 
   const back = () => {
+    setRect(null);
     setIndex((current) => Math.max(0, current - 1));
   };
 
@@ -269,34 +268,36 @@ export default function GuidedTour({
     onClose();
   };
 
-  if (!open || !step) {
+  if (!open || !step || typeof document === "undefined") {
     return null;
   }
 
-  return (
+  const content = (
     <div className="tour-layer" aria-live="polite">
-      <div className="tour-dim" />
+      {scrimStyles(rect).map((style, scrimIndex) => (
+        <div
+          // eslint-disable-next-line react/no-array-index-key
+          key={scrimIndex}
+          className={`tour-scrim ${rect ? "" : "tour-scrim-full"}`}
+          style={style}
+        />
+      ))}
 
       {rect && (
         <div
           className="tour-highlight"
           style={{
-            top: rect.top - 8,
-            left: rect.left - 8,
-            width: rect.width + 16,
-            height: rect.height + 16,
+            top: rect.top - 10,
+            left: rect.left - 10,
+            width: rect.width + 20,
+            height: rect.height + 20,
           }}
         />
       )}
 
       <section className="tour-card" style={positionStyle}>
         <div className="tour-card-header">
-          <button
-            type="button"
-            className="tour-close"
-            onClick={skip}
-            aria-label="Pular tour"
-          >
+          <button type="button" className="tour-close" onClick={skip} aria-label="Pular tour">
             <CloseIcon />
           </button>
 
@@ -309,12 +310,7 @@ export default function GuidedTour({
 
         <p>{step.description}</p>
 
-        {targetMissing && (
-          <span className="tour-warning">
-            Não encontramos a área exata nesta tela. Você pode continuar o tour
-            normalmente.
-          </span>
-        )}
+        {targetMissing && <span className="tour-warning">Não encontramos a área exata nesta tela. Você pode continuar o tour normalmente.</span>}
 
         <div className="tour-progress">
           <span
@@ -330,12 +326,7 @@ export default function GuidedTour({
           </button>
 
           <div>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={back}
-              disabled={index === 0}
-            >
+            <button type="button" className="btn btn-ghost" onClick={back} disabled={index === 0}>
               Voltar
             </button>
 
@@ -347,4 +338,6 @@ export default function GuidedTour({
       </section>
     </div>
   );
+
+  return createPortal(content, document.body);
 }

@@ -1,7 +1,9 @@
 import AddIcon from "@mui/icons-material/Add";
+import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import EventRepeatIcon from "@mui/icons-material/EventRepeat";
+import UndoOutlinedIcon from "@mui/icons-material/UndoOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import { Box, Modal } from "@mui/material";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
@@ -9,16 +11,13 @@ import { toast } from "react-toastify";
 import EmptyState from "@/components/EmptyState";
 import {
   CategoryResponse,
+  InstallmentEntryStatus,
+  InstallmentPaymentSource,
   InstallmentPurchasePayload,
   InstallmentPurchaseResponse,
 } from "@/types/finance";
 import { todayISO } from "@/utils/dates";
-import {
-  enumLabel,
-  formatDate,
-  formatMoney,
-  getErrorMessage,
-} from "@/utils/formatters";
+import { enumLabel, formatDate, formatMoney, getErrorMessage } from "@/utils/formatters";
 import { formatMoneyInput, parseMoneyInput } from "@/utils/moneyMask";
 import { api } from "@/utils/requests";
 
@@ -33,26 +32,41 @@ const defaultForm = (): InstallmentPurchasePayload => ({
   notes: "",
 });
 
+function entryStatusClass(status: InstallmentEntryStatus) {
+  if (status === "PAID") return "ok";
+  if (status === "CANCELED") return "muted";
+  return "pending";
+}
+
+function paymentSourceLabel(source?: InstallmentPaymentSource | null) {
+  if (source === "MANUAL") return "Baixa manual";
+  if (source === "AUTOMATIC") return "Baixa automática";
+  if (source === "CHAT") return "Baixa pelo chat";
+  if (source === "PARENT_INVOICE") return "Baixa pela fatura";
+  return "Sem baixa";
+}
+
 export default function InstallmentPurchasesPage() {
   const [items, setItems] = useState<InstallmentPurchaseResponse[]>([]);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [details, setDetails] = useState<InstallmentPurchaseResponse | null>(
-    null,
-  );
+  const [details, setDetails] = useState<InstallmentPurchaseResponse | null>(null);
   const [form, setForm] = useState<InstallmentPurchasePayload>(defaultForm());
   const [totalAmountText, setTotalAmountText] = useState("");
   const [installmentAmountText, setInstallmentAmountText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [entryUpdatingId, setEntryUpdatingId] = useState<number | null>(null);
+
+  const replacePurchase = useCallback((updated: InstallmentPurchaseResponse) => {
+    setItems((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    setDetails((current) => (current && current.id === updated.id ? updated : current));
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [purchasesResponse, categoriesResponse] = await Promise.all([
-        api.listInstallmentPurchases(),
-        api.listCategories("EXPENSE"),
-      ]);
+      const [purchasesResponse, categoriesResponse] = await Promise.all([api.listInstallmentPurchases(), api.listCategories("EXPENSE")]);
       setItems(purchasesResponse.data || []);
       setCategories(categoriesResponse.data || []);
     } finally {
@@ -64,19 +78,9 @@ export default function InstallmentPurchasesPage() {
     load();
   }, [load]);
 
-  const activeItems = useMemo(
-    () => items.filter((item) => item.status === "ACTIVE"),
-    [items],
-  );
+  const activeItems = useMemo(() => items.filter((item) => item.status === "ACTIVE"), [items]);
 
-  const totalRemaining = useMemo(
-    () =>
-      activeItems.reduce(
-        (sum, item) => sum + Number(item.remainingAmount || 0),
-        0,
-      ),
-    [activeItems],
-  );
+  const totalRemaining = useMemo(() => activeItems.reduce((sum, item) => sum + Number(item.remainingAmount || 0), 0), [activeItems]);
 
   function openCreateModal() {
     setForm(defaultForm());
@@ -99,20 +103,14 @@ export default function InstallmentPurchasesPage() {
       setModalOpen(false);
       await load();
     } catch (error) {
-      toast.error(
-        getErrorMessage(error, "Não foi possível criar a compra parcelada."),
-      );
+      toast.error(getErrorMessage(error, "Não foi possível criar a compra parcelada."));
     } finally {
       setSaving(false);
     }
   }
 
   async function cancelPurchase(item: InstallmentPurchaseResponse) {
-    if (
-      !window.confirm(
-        `Cancelar a compra parcelada \"${item.description}\"? Parcelas futuras planejadas serão canceladas.`,
-      )
-    ) {
+    if (!window.confirm(`Cancelar a compra parcelada \"${item.description}\"? Parcelas futuras planejadas serão canceladas.`)) {
       return;
     }
     try {
@@ -120,9 +118,35 @@ export default function InstallmentPurchasesPage() {
       toast.success("Compra parcelada cancelada.");
       await load();
     } catch (error) {
-      toast.error(
-        getErrorMessage(error, "Não foi possível cancelar a compra parcelada."),
-      );
+      toast.error(getErrorMessage(error, "Não foi possível cancelar a compra parcelada."));
+    }
+  }
+
+  async function markEntryPaid(entryId: number) {
+    setEntryUpdatingId(entryId);
+    try {
+      const response = await api.markInstallmentEntryPaid(entryId, {
+        paidOn: todayISO(),
+      });
+      replacePurchase(response.data);
+      toast.success("Parcela marcada como paga.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Não foi possível dar baixa na parcela."));
+    } finally {
+      setEntryUpdatingId(null);
+    }
+  }
+
+  async function reopenEntryPayment(entryId: number) {
+    setEntryUpdatingId(entryId);
+    try {
+      const response = await api.reopenInstallmentEntryPayment(entryId);
+      replacePurchase(response.data);
+      toast.success("Baixa da parcela desfeita.");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Não foi possível desfazer a baixa."));
+    } finally {
+      setEntryUpdatingId(null);
     }
   }
 
@@ -135,16 +159,11 @@ export default function InstallmentPurchasesPage() {
           </span>
           <h1>Compras parceladas</h1>
           <p>
-            Cadastre compras em parcelas uma única vez. O Money Master cria os
-            lançamentos planejados nos ciclos mensais corretos e mostra quanto
+            Cadastre compras em parcelas uma única vez. O Money Master cria os lançamentos planejados nos ciclos mensais corretos e mostra quanto
             ainda falta pagar.
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          type="button"
-          onClick={openCreateModal}
-        >
+        <button className="btn btn-primary" type="button" onClick={openCreateModal}>
           <AddIcon /> Nova compra parcelada
         </button>
       </section>
@@ -175,11 +194,7 @@ export default function InstallmentPurchasesPage() {
             title="Nenhuma compra parcelada cadastrada"
             message="Cadastre compras como cursos, eletrônicos e compras no cartão para que as parcelas entrem automaticamente no planejamento mensal."
             action={
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={openCreateModal}
-              >
+              <button className="btn btn-primary" type="button" onClick={openCreateModal}>
                 Criar compra parcelada
               </button>
             }
@@ -217,28 +232,14 @@ export default function InstallmentPurchasesPage() {
                       <small>até {formatDate(item.lastDueDate)}</small>
                     </td>
                     <td>
-                      <span
-                        className={`status-pill ${item.status === "ACTIVE" ? "ok" : "muted"}`}
-                      >
-                        {enumLabel(item.status)}
-                      </span>
+                      <span className={`status-pill ${item.status === "ACTIVE" ? "ok" : "muted"}`}>{enumLabel(item.status)}</span>
                     </td>
                     <td className="table-actions">
-                      <button
-                        type="button"
-                        className="icon-button"
-                        onClick={() => setDetails(item)}
-                        title="Ver parcelas"
-                      >
+                      <button type="button" className="icon-button" onClick={() => setDetails(item)} title="Ver parcelas">
                         <VisibilityOutlinedIcon />
                       </button>
                       {item.status === "ACTIVE" && (
-                        <button
-                          type="button"
-                          className="icon-button danger"
-                          onClick={() => cancelPurchase(item)}
-                          title="Cancelar"
-                        >
+                        <button type="button" className="icon-button danger" onClick={() => cancelPurchase(item)} title="Cancelar">
                           <DeleteOutlineOutlinedIcon />
                         </button>
                       )}
@@ -258,11 +259,7 @@ export default function InstallmentPurchasesPage() {
               <span className="eyebrow">Nova compra parcelada</span>
               <h2>Registrar compromisso futuro</h2>
             </div>
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => setModalOpen(false)}
-            >
+            <button type="button" className="icon-button" onClick={() => setModalOpen(false)}>
               <CloseIcon />
             </button>
           </div>
@@ -271,9 +268,7 @@ export default function InstallmentPurchasesPage() {
               Descrição
               <input
                 value={form.description}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, description: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder="Ex.: Curso de Mandarim"
                 required
               />
@@ -301,9 +296,7 @@ export default function InstallmentPurchasesPage() {
               Valor total
               <input
                 value={totalAmountText}
-                onChange={(e) =>
-                  setTotalAmountText(formatMoneyInput(e.target.value))
-                }
+                onChange={(e) => setTotalAmountText(formatMoneyInput(e.target.value))}
                 placeholder="Opcional se informar valor da parcela"
               />
             </label>
@@ -311,9 +304,7 @@ export default function InstallmentPurchasesPage() {
               Valor da parcela
               <input
                 value={installmentAmountText}
-                onChange={(e) =>
-                  setInstallmentAmountText(formatMoneyInput(e.target.value))
-                }
+                onChange={(e) => setInstallmentAmountText(formatMoneyInput(e.target.value))}
                 placeholder="Ex.: 60,15"
               />
             </label>
@@ -335,22 +326,14 @@ export default function InstallmentPurchasesPage() {
             </label>
             <label>
               Data da compra
-              <input
-                type="date"
-                value={form.purchaseDate || ""}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, purchaseDate: e.target.value }))
-                }
-              />
+              <input type="date" value={form.purchaseDate || ""} onChange={(e) => setForm((prev) => ({ ...prev, purchaseDate: e.target.value }))} />
             </label>
             <label>
               Primeira parcela
               <input
                 type="date"
                 value={form.firstDueDate}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, firstDueDate: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, firstDueDate: e.target.value }))}
                 required
               />
             </label>
@@ -358,27 +341,16 @@ export default function InstallmentPurchasesPage() {
               Observações
               <textarea
                 value={form.notes || ""}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, notes: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
                 rows={3}
                 placeholder="Ex.: compra no cartão, primeira parcela no ciclo atual"
               />
             </label>
             <div className="modal-actions full-span">
-              <button
-                className="btn btn-ghost"
-                type="button"
-                onClick={() => setModalOpen(false)}
-                disabled={saving}
-              >
+              <button className="btn btn-ghost" type="button" onClick={() => setModalOpen(false)} disabled={saving}>
                 Cancelar
               </button>
-              <button
-                className="btn btn-primary"
-                type="submit"
-                disabled={saving}
-              >
+              <button className="btn btn-primary" type="submit" disabled={saving}>
                 {saving ? "Salvando..." : "Criar compra"}
               </button>
             </div>
@@ -393,13 +365,15 @@ export default function InstallmentPurchasesPage() {
               <span className="eyebrow">Parcelas</span>
               <h2>{details?.description}</h2>
             </div>
-            <button
-              type="button"
-              className="icon-button"
-              onClick={() => setDetails(null)}
-            >
+            <button type="button" className="icon-button" onClick={() => setDetails(null)}>
               <CloseIcon />
             </button>
+          </div>
+          <div className="installment-details-summary">
+            <strong>
+              {details?.paidInstallments || 0}/{details?.installmentCount || 0} pagas
+            </strong>
+            <span>Saldo pendente: {formatMoney(details?.remainingAmount || 0)}</span>
           </div>
           <div className="responsive-table">
             <table>
@@ -410,27 +384,56 @@ export default function InstallmentPurchasesPage() {
                   <th>Vencimento</th>
                   <th>Valor</th>
                   <th>Status</th>
+                  <th>Baixa</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {details?.entries?.map((entry) => (
-                  <tr key={entry.id}>
-                    <td>
-                      {entry.installmentNumber}/{details.installmentCount}
-                    </td>
-                    <td>
-                      {entry.financialPeriodName ||
-                        `Ciclo #${entry.financialPeriodId}`}
-                    </td>
-                    <td>{formatDate(entry.dueDate)}</td>
-                    <td>{formatMoney(entry.amount)}</td>
-                    <td>
-                      <span className="status-pill pending">
-                        {enumLabel(entry.status)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {details?.entries?.map((entry) => {
+                  const isPaid = entry.status === "PAID";
+                  const disabled = entryUpdatingId === entry.id || entry.status === "CANCELED" || details.status === "CANCELED";
+                  return (
+                    <tr key={entry.id}>
+                      <td>
+                        {entry.installmentNumber}/{details.installmentCount}
+                      </td>
+                      <td>{entry.financialPeriodName || `Ciclo #${entry.financialPeriodId}`}</td>
+                      <td>{formatDate(entry.dueDate)}</td>
+                      <td>{formatMoney(entry.amount)}</td>
+                      <td>
+                        <span className={`status-pill ${entryStatusClass(entry.status)}`}>{enumLabel(entry.status)}</span>
+                      </td>
+                      <td>
+                        <strong>{entry.paidOn ? formatDate(entry.paidOn) : "—"}</strong>
+                        <small>{paymentSourceLabel(entry.paymentSource)}</small>
+                        {entry.paidByName && <small>por {entry.paidByName}</small>}
+                      </td>
+                      <td className="table-actions">
+                        {isPaid ? (
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-small"
+                            onClick={() => reopenEntryPayment(entry.id)}
+                            disabled={disabled}
+                            title="Desfazer baixa"
+                          >
+                            <UndoOutlinedIcon /> Desfazer
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-small"
+                            onClick={() => markEntryPaid(entry.id)}
+                            disabled={disabled}
+                            title="Marcar parcela como paga"
+                          >
+                            <CheckCircleOutlineIcon /> Pagar
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

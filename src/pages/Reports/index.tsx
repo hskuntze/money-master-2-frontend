@@ -21,16 +21,15 @@ import {
   FinancialTransactionResponse,
   MonthlyPeriodSummaryResponse,
   MonthlyPlanItemResponse,
+  MonthlyPlanItemNature,
   MonthlyPlanItemStatus,
   TransactionType,
 } from "@/types/finance";
 import { api } from "@/utils/requests";
 import { enumLabel, formatDate, formatMoney } from "@/utils/formatters";
 
-const toNumber = (value: number | string | null | undefined) =>
-  Number(value || 0);
-const percent = (value: number, total: number) =>
-  total > 0 ? Math.min((value / total) * 100, 100) : 0;
+const toNumber = (value: number | string | null | undefined) => Number(value || 0);
+const percent = (value: number, total: number) => (total > 0 ? Math.min((value / total) * 100, 100) : 0);
 const moneyAxis = (value: number) => formatMoney(value).replace("R$", "R$");
 
 function periodLabel(period: FinancialPeriodResponse | null | undefined) {
@@ -72,9 +71,7 @@ function compactDate(value?: string | null) {
 }
 
 function sortByDueDate(items: MonthlyPlanItemResponse[]) {
-  return [...items].sort((a, b) =>
-    `${a.dueDate}-${a.id}`.localeCompare(`${b.dueDate}-${b.id}`),
-  );
+  return [...items].sort((a, b) => `${a.dueDate}-${a.id}`.localeCompare(`${b.dueDate}-${b.id}`));
 }
 
 export default function ReportsPage() {
@@ -82,48 +79,29 @@ export default function ReportsPage() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
   const [comparePeriodId, setComparePeriodId] = useState<number | null>(null);
   const [period, setPeriod] = useState<FinancialPeriodResponse | null>(null);
-  const [monthlySummary, setMonthlySummary] =
-    useState<MonthlyPeriodSummaryResponse | null>(null);
-  const [compareSummary, setCompareSummary] =
-    useState<MonthlyPeriodSummaryResponse | null>(null);
+  const [monthlySummary, setMonthlySummary] = useState<MonthlyPeriodSummaryResponse | null>(null);
+  const [compareSummary, setCompareSummary] = useState<MonthlyPeriodSummaryResponse | null>(null);
   const [planItems, setPlanItems] = useState<MonthlyPlanItemResponse[]>([]);
   const [summary, setSummary] = useState<FinancialSummaryResponse | null>(null);
   const [flow, setFlow] = useState<DailyCashFlowResponse[]>([]);
-  const [expenseCategories, setExpenseCategories] = useState<
-    CategoryReportResponse[]
-  >([]);
-  const [incomeCategories, setIncomeCategories] = useState<
-    CategoryReportResponse[]
-  >([]);
-  const [transactions, setTransactions] = useState<
-    FinancialTransactionResponse[]
-  >([]);
+  const [expenseCategories, setExpenseCategories] = useState<CategoryReportResponse[]>([]);
+  const [incomeCategories, setIncomeCategories] = useState<CategoryReportResponse[]>([]);
+  const [transactions, setTransactions] = useState<FinancialTransactionResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const selectedPeriod = useMemo(
-    () => periods.find((item) => item.id === selectedPeriodId) || period,
-    [periods, selectedPeriodId, period],
-  );
+  const selectedPeriod = useMemo(() => periods.find((item) => item.id === selectedPeriodId) || period, [periods, selectedPeriodId, period]);
 
-  const orderedPeriods = useMemo(
-    () => [...periods].sort((a, b) => b.startDate.localeCompare(a.startDate)),
-    [periods],
-  );
+  const orderedPeriods = useMemo(() => [...periods].sort((a, b) => b.startDate.localeCompare(a.startDate)), [periods]);
 
   const loadPeriods = useCallback(async () => {
-    const [periodsResponse, currentResponse] = await Promise.all([
-      api.listFinancialPeriods(),
-      api.currentFinancialPeriod(),
-    ]);
+    const [periodsResponse, currentResponse] = await Promise.all([api.listFinancialPeriods(), api.currentFinancialPeriod()]);
     const loadedPeriods = periodsResponse.data || [];
     const current = currentResponse.data;
     setPeriods(loadedPeriods);
     setSelectedPeriodId((previous) => previous || current.id);
     setComparePeriodId((previous) => {
       if (previous) return previous;
-      const previousPeriod = loadedPeriods
-        .filter((item) => item.id !== current.id)
-        .sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+      const previousPeriod = loadedPeriods.filter((item) => item.id !== current.id).sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
       return previousPeriod?.id || null;
     });
   }, []);
@@ -133,39 +111,22 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const basePeriod = periods.find((item) => item.id === selectedPeriodId);
-      const [periodResponse, monthlySummaryResponse, planItemsResponse] =
-        await Promise.all([
-          basePeriod
-            ? Promise.resolve({ data: basePeriod })
-            : api.getFinancialPeriod(selectedPeriodId),
-          api.monthlyPeriodSummary(selectedPeriodId),
-          api.listMonthlyPlanItems(selectedPeriodId),
-        ]);
+      const [periodResponse, monthlySummaryResponse, planItemsResponse] = await Promise.all([
+        basePeriod ? Promise.resolve({ data: basePeriod }) : api.getFinancialPeriod(selectedPeriodId),
+        api.monthlyPeriodSummary(selectedPeriodId),
+        api.listMonthlyPlanItems(selectedPeriodId),
+      ]);
 
       const activePeriod = periodResponse.data;
       setPeriod(activePeriod);
       setMonthlySummary(monthlySummaryResponse.data);
       setPlanItems(planItemsResponse.data || []);
 
-      const [
-        summaryResponse,
-        flowResponse,
-        expensesResponse,
-        incomesResponse,
-        transactionsResponse,
-      ] = await Promise.all([
+      const [summaryResponse, flowResponse, expensesResponse, incomesResponse, transactionsResponse] = await Promise.all([
         api.summary({ from: activePeriod.startDate, to: activePeriod.endDate }),
         api.dailyCashFlow(activePeriod.startDate, activePeriod.endDate),
-        api.categoriesReport(
-          activePeriod.startDate,
-          activePeriod.endDate,
-          "EXPENSE",
-        ),
-        api.categoriesReport(
-          activePeriod.startDate,
-          activePeriod.endDate,
-          "INCOME",
-        ),
+        api.categoriesReport(activePeriod.startDate, activePeriod.endDate, "EXPENSE"),
+        api.categoriesReport(activePeriod.startDate, activePeriod.endDate, "INCOME"),
         api.listTransactions({
           from: activePeriod.startDate,
           to: activePeriod.endDate,
@@ -203,19 +164,10 @@ export default function ReportsPage() {
     loadCompare();
   }, [loadCompare]);
 
-  const activeItems = useMemo(
-    () => planItems.filter((item) => item.status !== "CANCELED"),
-    [planItems],
-  );
+  const activeItems = useMemo(() => planItems.filter((item) => item.status !== "CANCELED"), [planItems]);
 
   const pendingItems = useMemo(
-    () =>
-      sortByDueDate(
-        activeItems.filter(
-          (item) =>
-            item.status === "PENDING" || item.status === "PARTIALLY_PAID",
-        ),
-      ),
+    () => sortByDueDate(activeItems.filter((item) => item.status === "PENDING" || item.status === "PARTIALLY_PAID")),
     [activeItems],
   );
 
@@ -224,58 +176,32 @@ export default function ReportsPage() {
     return pendingItems.filter((item) => item.dueDate < today);
   }, [pendingItems]);
 
-  const expenseItems = useMemo(
-    () => activeItems.filter((item) => item.type === "EXPENSE"),
-    [activeItems],
-  );
-  const incomeItems = useMemo(
-    () => activeItems.filter((item) => item.type === "INCOME"),
-    [activeItems],
-  );
+  const expenseItems = useMemo(() => activeItems.filter((item) => item.type === "EXPENSE"), [activeItems]);
+  const incomeItems = useMemo(() => activeItems.filter((item) => item.type === "INCOME"), [activeItems]);
 
   const natureTotals = useMemo(() => {
-    const build = (type: TransactionType, nature: "FIXED" | "VARIABLE") => {
+    const build = (type: TransactionType, nature: MonthlyPlanItemNature | "VARIABLE_GROUP") => {
       const items = activeItems.filter(
-        (item) => item.type === type && item.nature === nature,
+        (item) => item.type === type && (nature === "VARIABLE_GROUP" ? item.nature !== "FIXED" : item.nature === nature),
       );
       return {
-        expected: items.reduce(
-          (total, item) => total + toNumber(item.expectedAmount),
-          0,
-        ),
-        actual: items.reduce(
-          (total, item) => total + toNumber(item.actualAmount),
-          0,
-        ),
-        pending: items.reduce(
-          (total, item) =>
-            total +
-            Math.max(
-              toNumber(item.expectedAmount) - toNumber(item.actualAmount),
-              0,
-            ),
-          0,
-        ),
+        expected: items.reduce((total, item) => total + toNumber(item.expectedAmount), 0),
+        actual: items.reduce((total, item) => total + toNumber(item.actualAmount), 0),
+        pending: items.reduce((total, item) => total + Math.max(toNumber(item.expectedAmount) - toNumber(item.actualAmount), 0), 0),
         count: items.length,
       };
     };
     return {
       fixedIncome: build("INCOME", "FIXED"),
-      variableIncome: build("INCOME", "VARIABLE"),
+      variableIncome: build("INCOME", "VARIABLE_GROUP"),
       fixedExpense: build("EXPENSE", "FIXED"),
-      variableExpense: build("EXPENSE", "VARIABLE"),
+      variableExpense: build("EXPENSE", "VARIABLE_GROUP"),
     };
   }, [activeItems]);
 
-  const linkedTransactions = useMemo(
-    () => transactions.filter((transaction) => !!transaction.monthlyPlanItemId),
-    [transactions],
-  );
+  const linkedTransactions = useMemo(() => transactions.filter((transaction) => !!transaction.monthlyPlanItemId), [transactions]);
 
-  const unlinkedTransactions = useMemo(
-    () => transactions.filter((transaction) => !transaction.monthlyPlanItemId),
-    [transactions],
-  );
+  const unlinkedTransactions = useMemo(() => transactions.filter((transaction) => !transaction.monthlyPlanItemId), [transactions]);
 
   const cashFlowOptions: any = useMemo(
     () => ({
@@ -325,50 +251,25 @@ export default function ReportsPage() {
     [],
   );
 
-  const receivedProgress = percent(
-    toNumber(monthlySummary?.paidIncomeTotal),
-    toNumber(monthlySummary?.plannedIncomeTotal),
-  );
-  const paidProgress = percent(
-    toNumber(monthlySummary?.paidExpenseTotal),
-    toNumber(monthlySummary?.plannedExpenseTotal),
-  );
-  const associationProgress = percent(
-    linkedTransactions.length,
-    transactions.length,
-  );
-  const netRealized =
-    toNumber(summary?.incomeTotal) - toNumber(summary?.expenseTotal);
+  const receivedProgress = percent(toNumber(monthlySummary?.paidIncomeTotal), toNumber(monthlySummary?.plannedIncomeTotal));
+  const paidProgress = percent(toNumber(monthlySummary?.paidExpenseTotal), toNumber(monthlySummary?.plannedExpenseTotal));
+  const associationProgress = percent(linkedTransactions.length, transactions.length);
+  const netRealized = toNumber(summary?.incomeTotal) - toNumber(summary?.expenseTotal);
 
   const comparePeriod = useMemo(
-    () =>
-      periods.find((item) => item.id === comparePeriodId) ||
-      compareSummary?.period ||
-      null,
+    () => periods.find((item) => item.id === comparePeriodId) || compareSummary?.period || null,
     [periods, comparePeriodId, compareSummary],
   );
 
   const diff = useMemo(() => {
     if (!monthlySummary || !compareSummary) return null;
     return {
-      plannedIncome:
-        toNumber(monthlySummary.plannedIncomeTotal) -
-        toNumber(compareSummary.plannedIncomeTotal),
-      plannedExpense:
-        toNumber(monthlySummary.plannedExpenseTotal) -
-        toNumber(compareSummary.plannedExpenseTotal),
-      paidIncome:
-        toNumber(monthlySummary.paidIncomeTotal) -
-        toNumber(compareSummary.paidIncomeTotal),
-      paidExpense:
-        toNumber(monthlySummary.paidExpenseTotal) -
-        toNumber(compareSummary.paidExpenseTotal),
-      projectedAvailable:
-        toNumber(monthlySummary.projectedAvailableAmount) -
-        toNumber(compareSummary.projectedAvailableAmount),
-      pendingItems:
-        toNumber(monthlySummary.pendingItems) -
-        toNumber(compareSummary.pendingItems),
+      plannedIncome: toNumber(monthlySummary.plannedIncomeTotal) - toNumber(compareSummary.plannedIncomeTotal),
+      plannedExpense: toNumber(monthlySummary.plannedExpenseTotal) - toNumber(compareSummary.plannedExpenseTotal),
+      paidIncome: toNumber(monthlySummary.paidIncomeTotal) - toNumber(compareSummary.paidIncomeTotal),
+      paidExpense: toNumber(monthlySummary.paidExpenseTotal) - toNumber(compareSummary.paidExpenseTotal),
+      projectedAvailable: toNumber(monthlySummary.projectedAvailableAmount) - toNumber(compareSummary.projectedAvailableAmount),
+      pendingItems: toNumber(monthlySummary.pendingItems) - toNumber(compareSummary.pendingItems),
     };
   }, [monthlySummary, compareSummary]);
 
@@ -380,10 +281,7 @@ export default function ReportsPage() {
             <BarChartIcon /> Relatórios
           </span>
           <h1>Relatórios do mês financeiro</h1>
-          <p>
-            Analise planejamento, baixas, transações reais e pendências dentro
-            do ciclo selecionado.
-          </p>
+          <p>Analise planejamento, baixas, transações reais e pendências dentro do ciclo selecionado.</p>
         </div>
         <div className="hero-actions">
           <Link className="btn btn-soft" to="/app/monthly-periods">
@@ -398,12 +296,7 @@ export default function ReportsPage() {
       <section className="panel monthly-report-filters">
         <div className="filter-field wide">
           <label>Mês financeiro</label>
-          <select
-            value={selectedPeriodId || ""}
-            onChange={(event) =>
-              setSelectedPeriodId(Number(event.target.value))
-            }
-          >
+          <select value={selectedPeriodId || ""} onChange={(event) => setSelectedPeriodId(Number(event.target.value))}>
             {orderedPeriods.map((item) => (
               <option key={item.id} value={item.id}>
                 {periodLabel(item)}
@@ -413,14 +306,7 @@ export default function ReportsPage() {
         </div>
         <div className="filter-field wide">
           <label>Comparar com</label>
-          <select
-            value={comparePeriodId || ""}
-            onChange={(event) =>
-              setComparePeriodId(
-                event.target.value ? Number(event.target.value) : null,
-              )
-            }
-          >
+          <select value={comparePeriodId || ""} onChange={(event) => setComparePeriodId(event.target.value ? Number(event.target.value) : null)}>
             <option value="">Sem comparação</option>
             {orderedPeriods
               .filter((item) => item.id !== selectedPeriodId)
@@ -431,11 +317,7 @@ export default function ReportsPage() {
               ))}
           </select>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={loadReport}
-          disabled={loading}
-        >
+        <button className="btn btn-primary" onClick={loadReport} disabled={loading}>
           Atualizar
         </button>
       </section>
@@ -457,11 +339,7 @@ export default function ReportsPage() {
         </div>
         <div>
           <span>Realizado no ciclo</span>
-          <strong
-            className={netRealized >= 0 ? "positive-text" : "negative-text"}
-          >
-            {formatMoney(netRealized)}
-          </strong>
+          <strong className={netRealized >= 0 ? "positive-text" : "negative-text"}>{formatMoney(netRealized)}</strong>
           <small>Receitas menos despesas reais</small>
         </div>
       </section>
@@ -471,12 +349,8 @@ export default function ReportsPage() {
           <div className="monthly-report-main-card-header">
             <div>
               <span>Disponível projetado</span>
-              <strong>
-                {formatMoney(monthlySummary?.projectedAvailableAmount)}
-              </strong>
-              <small>
-                Considera receitas/contas planejadas e o que já foi realizado.
-              </small>
+              <strong>{formatMoney(monthlySummary?.projectedAvailableAmount)}</strong>
+              <small>Considera receitas/contas planejadas e o que já foi realizado.</small>
             </div>
             <WalletIcon />
           </div>
@@ -487,14 +361,10 @@ export default function ReportsPage() {
                 <strong>{receivedProgress.toFixed(0)}%</strong>
               </div>
               <div className="progress-track">
-                <span
-                  className="progress-fill"
-                  style={{ width: `${receivedProgress}%` }}
-                />
+                <span className="progress-fill" style={{ width: `${receivedProgress}%` }} />
               </div>
               <small>
-                {formatMoney(monthlySummary?.paidIncomeTotal)} de{" "}
-                {formatMoney(monthlySummary?.plannedIncomeTotal)}
+                {formatMoney(monthlySummary?.paidIncomeTotal)} de {formatMoney(monthlySummary?.plannedIncomeTotal)}
               </small>
             </div>
             <div>
@@ -503,14 +373,10 @@ export default function ReportsPage() {
                 <strong>{paidProgress.toFixed(0)}%</strong>
               </div>
               <div className="progress-track">
-                <span
-                  className="progress-fill negative-fill"
-                  style={{ width: `${paidProgress}%` }}
-                />
+                <span className="progress-fill negative-fill" style={{ width: `${paidProgress}%` }} />
               </div>
               <small>
-                {formatMoney(monthlySummary?.paidExpenseTotal)} de{" "}
-                {formatMoney(monthlySummary?.plannedExpenseTotal)}
+                {formatMoney(monthlySummary?.paidExpenseTotal)} de {formatMoney(monthlySummary?.plannedExpenseTotal)}
               </small>
             </div>
           </div>
@@ -520,9 +386,7 @@ export default function ReportsPage() {
           <div>
             <span>Rendas planejadas</span>
             <strong>{formatMoney(monthlySummary?.plannedIncomeTotal)}</strong>
-            <small>
-              Recebido: {formatMoney(monthlySummary?.paidIncomeTotal)}
-            </small>
+            <small>Recebido: {formatMoney(monthlySummary?.paidIncomeTotal)}</small>
           </div>
           <div className="metric-icon">
             <NorthEastIcon />
@@ -537,22 +401,6 @@ export default function ReportsPage() {
           </div>
           <div className="metric-icon">
             <SouthEastIcon />
-          </div>
-        </article>
-
-        <article className="metric-card monthly-report-metric">
-          <div>
-            <span>Pendente no mês</span>
-            <strong>
-              {formatMoney(
-                toNumber(monthlySummary?.pendingIncomeTotal) +
-                  toNumber(monthlySummary?.pendingExpenseTotal),
-              )}
-            </strong>
-            <small>{pendingItems.length} item(ns) em aberto</small>
-          </div>
-          <div className="metric-icon">
-            <PendingActionsIcon />
           </div>
         </article>
       </section>
@@ -581,8 +429,7 @@ export default function ReportsPage() {
           </div>
           <strong>{associationProgress.toFixed(0)}%</strong>
           <small>
-            {linkedTransactions.length} de {transactions.length} transação(ões)
-            vinculada(s).
+            {linkedTransactions.length} de {transactions.length} transação(ões) vinculada(s).
           </small>
         </article>
         <article className="panel">
@@ -609,24 +456,15 @@ export default function ReportsPage() {
             series={[
               {
                 name: "Planejado",
-                data: [
-                  toNumber(monthlySummary?.plannedIncomeTotal),
-                  toNumber(monthlySummary?.plannedExpenseTotal),
-                ],
+                data: [toNumber(monthlySummary?.plannedIncomeTotal), toNumber(monthlySummary?.plannedExpenseTotal)],
               },
               {
                 name: "Realizado",
-                data: [
-                  toNumber(monthlySummary?.paidIncomeTotal),
-                  toNumber(monthlySummary?.paidExpenseTotal),
-                ],
+                data: [toNumber(monthlySummary?.paidIncomeTotal), toNumber(monthlySummary?.paidExpenseTotal)],
               },
               {
                 name: "Pendente",
-                data: [
-                  toNumber(monthlySummary?.pendingIncomeTotal),
-                  toNumber(monthlySummary?.pendingExpenseTotal),
-                ],
+                data: [toNumber(monthlySummary?.pendingIncomeTotal), toNumber(monthlySummary?.pendingExpenseTotal)],
               },
             ]}
             type="bar"
@@ -638,10 +476,7 @@ export default function ReportsPage() {
           <div className="panel-header">
             <div>
               <h2>Fixas x variáveis</h2>
-              <small>
-                Ajuda a entender o peso de compromissos fixos e gastos
-                variáveis.
-              </small>
+              <small>Ajuda a entender o peso de compromissos fixos e gastos variáveis.</small>
             </div>
           </div>
           <SafeApexChart
@@ -649,12 +484,7 @@ export default function ReportsPage() {
             options={{
               ...natureOptions,
               yaxis: {
-                categories: [
-                  "Renda fixa",
-                  "Renda variável",
-                  "Conta fixa",
-                  "Conta variável",
-                ],
+                categories: ["Renda fixa", "Renda variável", "Conta fixa", "Conta variável"],
               },
             }}
             series={[
@@ -712,10 +542,7 @@ export default function ReportsPage() {
               height={330}
             />
           ) : (
-            <EmptyState
-              title="Sem fluxo no ciclo"
-              message="As baixas reais ainda não geraram movimentação para o período."
-            />
+            <EmptyState title="Sem fluxo no ciclo" message="As baixas reais ainda não geraram movimentação para o período." />
           )}
         </article>
 
@@ -733,33 +560,18 @@ export default function ReportsPage() {
                   <div>
                     <strong>{item.description}</strong>
                     <small>
-                      {transactionTypeLabel(item.type)} •{" "}
-                      {item.nature === "FIXED" ? "Fixa" : "Variável"} •{" "}
-                      {compactDate(item.dueDate)}
+                      {transactionTypeLabel(item.type)} • {enumLabel(item.nature)} • {compactDate(item.dueDate)}
                     </small>
                   </div>
                   <div className="align-right">
-                    <strong>
-                      {formatMoney(
-                        Math.max(
-                          toNumber(item.expectedAmount) -
-                            toNumber(item.actualAmount),
-                          0,
-                        ),
-                      )}
-                    </strong>
-                    <span className={`status-pill ${statusTone(item.status)}`}>
-                      {statusLabel(item.status)}
-                    </span>
+                    <strong>{formatMoney(Math.max(toNumber(item.expectedAmount) - toNumber(item.actualAmount), 0))}</strong>
+                    <span className={`status-pill ${statusTone(item.status)}`}>{statusLabel(item.status)}</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <EmptyState
-              title="Sem pendências"
-              message="Nenhuma conta ou renda planejada está pendente neste ciclo."
-            />
+            <EmptyState title="Sem pendências" message="Nenhuma conta ou renda planejada está pendente neste ciclo." />
           )}
         </article>
       </section>
@@ -769,9 +581,7 @@ export default function ReportsPage() {
           <div className="panel-header">
             <div>
               <h2>Despesas reais por categoria</h2>
-              <small>
-                Somente valores já baixados/registrados como transação.
-              </small>
+              <small>Somente valores já baixados/registrados como transação.</small>
             </div>
           </div>
           {expenseCategories.length ? (
@@ -788,10 +598,7 @@ export default function ReportsPage() {
               height={320}
             />
           ) : (
-            <EmptyState
-              title="Sem despesas reais"
-              message="As despesas pendentes ainda não foram baixadas neste ciclo."
-            />
+            <EmptyState title="Sem despesas reais" message="As despesas pendentes ainda não foram baixadas neste ciclo." />
           )}
         </article>
 
@@ -816,10 +623,7 @@ export default function ReportsPage() {
               height={320}
             />
           ) : (
-            <EmptyState
-              title="Sem receitas reais"
-              message="As receitas planejadas ainda não foram recebidas neste ciclo."
-            />
+            <EmptyState title="Sem receitas reais" message="As receitas planejadas ainda não foram recebidas neste ciclo." />
           )}
         </article>
       </section>
@@ -837,65 +641,27 @@ export default function ReportsPage() {
           <div className="comparison-result monthly-comparison-result">
             <article>
               <span>Diferença de renda prevista</span>
-              <strong
-                className={
-                  diff.plannedIncome >= 0 ? "positive-text" : "negative-text"
-                }
-              >
-                {formatMoney(diff.plannedIncome)}
-              </strong>
+              <strong className={diff.plannedIncome >= 0 ? "positive-text" : "negative-text"}>{formatMoney(diff.plannedIncome)}</strong>
             </article>
             <article>
               <span>Diferença de contas previstas</span>
-              <strong
-                className={
-                  diff.plannedExpense <= 0 ? "positive-text" : "negative-text"
-                }
-              >
-                {formatMoney(diff.plannedExpense)}
-              </strong>
+              <strong className={diff.plannedExpense <= 0 ? "positive-text" : "negative-text"}>{formatMoney(diff.plannedExpense)}</strong>
             </article>
             <article>
               <span>Diferença de renda recebida</span>
-              <strong
-                className={
-                  diff.paidIncome >= 0 ? "positive-text" : "negative-text"
-                }
-              >
-                {formatMoney(diff.paidIncome)}
-              </strong>
+              <strong className={diff.paidIncome >= 0 ? "positive-text" : "negative-text"}>{formatMoney(diff.paidIncome)}</strong>
             </article>
             <article>
               <span>Diferença de contas pagas</span>
-              <strong
-                className={
-                  diff.paidExpense <= 0 ? "positive-text" : "negative-text"
-                }
-              >
-                {formatMoney(diff.paidExpense)}
-              </strong>
+              <strong className={diff.paidExpense <= 0 ? "positive-text" : "negative-text"}>{formatMoney(diff.paidExpense)}</strong>
             </article>
             <article>
               <span>Diferença disponível projetado</span>
-              <strong
-                className={
-                  diff.projectedAvailable >= 0
-                    ? "positive-text"
-                    : "negative-text"
-                }
-              >
-                {formatMoney(diff.projectedAvailable)}
-              </strong>
+              <strong className={diff.projectedAvailable >= 0 ? "positive-text" : "negative-text"}>{formatMoney(diff.projectedAvailable)}</strong>
             </article>
             <article>
               <span>Diferença de pendências</span>
-              <strong
-                className={
-                  diff.pendingItems <= 0 ? "positive-text" : "negative-text"
-                }
-              >
-                {diff.pendingItems}
-              </strong>
+              <strong className={diff.pendingItems <= 0 ? "positive-text" : "negative-text"}>{diff.pendingItems}</strong>
             </article>
           </div>
         </section>
@@ -906,8 +672,7 @@ export default function ReportsPage() {
           <div>
             <h2>Resumo dos itens planejados</h2>
             <small>
-              {incomeItems.length} renda(s), {expenseItems.length} conta(s) e{" "}
-              {transactions.length} transação(ões) reais no ciclo.
+              {incomeItems.length} renda(s), {expenseItems.length} conta(s) e {transactions.length} transação(ões) reais no ciclo.
             </small>
           </div>
         </div>
@@ -928,42 +693,23 @@ export default function ReportsPage() {
               </thead>
               <tbody>
                 {sortByDueDate(activeItems).map((item) => {
-                  const remaining = Math.max(
-                    toNumber(item.expectedAmount) - toNumber(item.actualAmount),
-                    0,
-                  );
+                  const remaining = Math.max(toNumber(item.expectedAmount) - toNumber(item.actualAmount), 0);
                   return (
                     <tr key={item.id}>
                       <td>
                         <strong>{item.description}</strong>
-                        <small>
-                          {item.categoryName ||
-                            item.category?.name ||
-                            "Sem categoria"}
-                        </small>
+                        <small>{item.categoryName || item.category?.name || "Sem categoria"}</small>
                       </td>
                       <td>
-                        <span
-                          className={`status-pill ${transactionTypeTone(item.type)}`}
-                        >
-                          {transactionTypeLabel(item.type)}
-                        </span>
+                        <span className={`status-pill ${transactionTypeTone(item.type)}`}>{transactionTypeLabel(item.type)}</span>
                       </td>
-                      <td>{item.nature === "FIXED" ? "Fixa" : "Variável"}</td>
+                      <td>{enumLabel(item.nature)}</td>
                       <td>{formatDate(item.dueDate)}</td>
                       <td>
-                        <span
-                          className={`status-pill ${statusTone(item.status)}`}
-                        >
-                          {statusLabel(item.status)}
-                        </span>
+                        <span className={`status-pill ${statusTone(item.status)}`}>{statusLabel(item.status)}</span>
                       </td>
-                      <td className="align-right">
-                        {formatMoney(item.expectedAmount)}
-                      </td>
-                      <td className="align-right">
-                        {formatMoney(item.actualAmount)}
-                      </td>
+                      <td className="align-right">{formatMoney(item.expectedAmount)}</td>
+                      <td className="align-right">{formatMoney(item.actualAmount)}</td>
                       <td className="align-right">{formatMoney(remaining)}</td>
                     </tr>
                   );
@@ -988,10 +734,7 @@ export default function ReportsPage() {
         <div className="panel-header">
           <div>
             <h2>Transações reais do ciclo</h2>
-            <small>
-              Use esta visão para encontrar lançamentos avulsos que ainda
-              precisam ser associados ao planejamento mensal.
-            </small>
+            <small>Use esta visão para encontrar lançamentos avulsos que ainda precisam ser associados ao planejamento mensal.</small>
           </div>
         </div>
         {transactions.length ? (
@@ -1015,11 +758,7 @@ export default function ReportsPage() {
                       <small>{transaction.account?.name || "Sem conta"}</small>
                     </td>
                     <td>
-                      <span
-                        className={`status-pill ${transactionTypeTone(transaction.type)}`}
-                      >
-                        {transactionTypeLabel(transaction.type)}
-                      </span>
+                      <span className={`status-pill ${transactionTypeTone(transaction.type)}`}>{transactionTypeLabel(transaction.type)}</span>
                     </td>
                     <td>{transaction.category?.name || "Sem categoria"}</td>
                     <td>{formatDate(transaction.occurredOn)}</td>
@@ -1035,11 +774,7 @@ export default function ReportsPage() {
                     <td
                       className={`align-right ${transaction.type === "EXPENSE" ? "negative-text" : transaction.type === "INCOME" ? "positive-text" : ""}`}
                     >
-                      {transaction.type === "EXPENSE"
-                        ? "- "
-                        : transaction.type === "INCOME"
-                          ? "+ "
-                          : ""}
+                      {transaction.type === "EXPENSE" ? "- " : transaction.type === "INCOME" ? "+ " : ""}
                       {formatMoney(transaction.amount)}
                     </td>
                   </tr>
@@ -1048,10 +783,7 @@ export default function ReportsPage() {
             </table>
           </div>
         ) : (
-          <EmptyState
-            title="Sem transações reais"
-            message="O ciclo ainda não possui baixas ou lançamentos diários registrados."
-          />
+          <EmptyState title="Sem transações reais" message="O ciclo ainda não possui baixas ou lançamentos diários registrados." />
         )}
       </section>
     </div>

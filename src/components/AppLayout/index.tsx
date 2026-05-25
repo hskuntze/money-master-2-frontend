@@ -16,6 +16,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "@/contexts/AuthContext";
 import { ThemeContext } from "@/contexts/ThemeContext";
 import GuidedTour from "../GuidedTour";
+import FloatingAiChat from "../AiChat/FloatingAiChat";
 import { api, resolveApiAssetUrl } from "@/utils/requests";
 
 type NavItem = {
@@ -95,15 +96,10 @@ export default function AppLayout() {
           return;
         }
 
-        const forcedTour =
-          sessionStorage.getItem("mm-start-tour-after-onboarding") === "true";
-        const alreadyInvited =
-          sessionStorage.getItem("mm-tour-invite-shown") === "true";
+        const forcedTour = sessionStorage.getItem("mm-start-tour-after-onboarding") === "true";
+        const alreadyInvited = sessionStorage.getItem("mm-tour-invite-shown") === "true";
         const shouldInvite =
-          (forcedTour || response.data.shouldInviteTour) &&
-          !response.data.tourCompleted &&
-          !response.data.tourSkipped &&
-          !alreadyInvited;
+          (forcedTour || response.data.shouldInviteTour) && !response.data.tourCompleted && !response.data.tourSkipped && !alreadyInvited;
 
         if (shouldInvite) {
           sessionStorage.setItem("mm-tour-invite-shown", "true");
@@ -135,11 +131,7 @@ export default function AppLayout() {
     <div className="shell">
       <aside className="sidebar">
         <NavLink to="/app/dashboard" className="brand-block">
-          {theme.logoUrl ? (
-            <img src={theme.logoUrl} alt={theme.appName} />
-          ) : (
-            <span>MM</span>
-          )}
+          {theme.logoUrl ? <img src={theme.logoUrl} alt={theme.appName} /> : <span>MM</span>}
           <div>
             <strong>{theme.appName || "Money Master 2"}</strong>
             <small>Kuntze Dev</small>
@@ -150,27 +142,15 @@ export default function AppLayout() {
           {navItems
             .filter(
               (item) =>
-                (!item.permission ||
-                  user?.permissions?.includes(item.permission)) &&
-                (!item.anyPermission ||
-                  item.anyPermission.some((permission) =>
-                    user?.permissions?.includes(permission),
-                  )),
+                (!item.permission || user?.permissions?.includes(item.permission)) &&
+                (!item.anyPermission || item.anyPermission.some((permission) => user?.permissions?.includes(permission))),
             )
             .map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                data-tour={
-                  item.to === "/app/monthly-periods"
-                    ? "nav-monthly-periods"
-                    : item.to === "/app/reports"
-                      ? "nav-reports"
-                      : undefined
-                }
-                className={({ isActive }) =>
-                  `side-link ${isActive ? "active" : ""}`
-                }
+                data-tour={item.to === "/app/monthly-periods" ? "nav-monthly-periods" : item.to === "/app/reports" ? "nav-reports" : undefined}
+                className={({ isActive }) => `side-link ${isActive ? "active" : ""}`}
               >
                 {item.icon}
                 <span>{item.label}</span>
@@ -191,25 +171,13 @@ export default function AppLayout() {
             <strong>Planeje seu ciclo mensal com menos fricção</strong>
           </div>
           <div className="topbar-actions">
-            <button
-              type="button"
-              className="help-tour-button"
-              onClick={startTour}
-            >
+            <button type="button" className="help-tour-button" onClick={startTour}>
               <HelpOutlineIcon />
               <span>Tour do sistema</span>
             </button>
-            <NavLink
-              to="/app/profile"
-              className="user-chip user-profile-chip"
-              aria-label="Abrir perfil do usuário"
-            >
+            <NavLink to="/app/profile" className="user-chip user-profile-chip" aria-label="Abrir perfil do usuário">
               <span className="topbar-avatar">
-                {userAvatarUrl ? (
-                  <img src={userAvatarUrl} alt="Foto do usuário" />
-                ) : (
-                  getInitials(user?.name, user?.email)
-                )}
+                {userAvatarUrl ? <img src={userAvatarUrl} alt="Foto do usuário" /> : getInitials(user?.name, user?.email)}
               </span>
               <span>{user?.email}</span>
             </NavLink>
@@ -222,23 +190,12 @@ export default function AppLayout() {
         <div className="modal-backdrop tour-invite-backdrop">
           <section className="modal-card tour-invite-card">
             <h3>Quer fazer um tour rápido?</h3>
-            <p>
-              Em poucos passos eu te mostro onde ficam o planejamento mensal,
-              contas, transações, compras parceladas, cofrinhos e relatórios.
-            </p>
+            <p>Em poucos passos eu te mostro onde ficam o planejamento mensal, contas, transações, compras parceladas, cofrinhos e relatórios.</p>
             <div className="modal-actions">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={skipTourInvitation}
-              >
+              <button type="button" className="btn btn-ghost" onClick={skipTourInvitation}>
                 Pular agora
               </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={startTour}
-              >
+              <button type="button" className="btn btn-primary" onClick={startTour}>
                 Iniciar tour
               </button>
             </div>
@@ -252,6 +209,7 @@ export default function AppLayout() {
         onCompleted={() => setTourInvitationOpen(false)}
         onSkipped={() => setTourInvitationOpen(false)}
       />
+      <FloatingAiChat />
     </div>
   );
 }

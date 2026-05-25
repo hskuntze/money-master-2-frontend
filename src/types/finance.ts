@@ -1,28 +1,13 @@
-export type AccountType =
-  | "CHECKING"
-  | "SAVINGS"
-  | "CASH"
-  | "CREDIT_CARD"
-  | "INVESTMENT"
-  | "OTHER";
+export type AccountType = "CHECKING" | "SAVINGS" | "CASH" | "CREDIT_CARD" | "INVESTMENT" | "OTHER";
 export type TransactionType = "INCOME" | "EXPENSE" | "TRANSFER";
 export type TransactionSource = "MANUAL" | "AI_CHAT" | "IMPORTED";
 export type FinancialPeriodStatus = "OPEN" | "SCHEDULED" | "CLOSED";
-export type MonthlyPlanItemStatus =
-  | "PENDING"
-  | "PARTIALLY_PAID"
-  | "PAID"
-  | "CANCELED";
-export type MonthlyPlanItemNature = "FIXED" | "VARIABLE";
+export type MonthlyPlanItemStatus = "PENDING" | "PARTIALLY_PAID" | "PAID" | "CANCELED";
+export type MonthlyPlanItemNature = "FIXED" | "VARIABLE" | "CREDIT_CARD";
+export type MonthlyPlanItemAggregationType = "NORMAL" | "GROUP_PARENT" | "GROUP_CHILD";
+export type MonthlyPlanItemSettlementOrigin = "DIRECT" | "PARENT";
 export type SavingsJarYieldCalculationType = "MANUAL" | "CDI_PERCENTAGE";
-export type SavingsJarMovementType =
-  | "INITIAL_BALANCE"
-  | "INITIAL_YIELD"
-  | "DEPOSIT"
-  | "WITHDRAWAL"
-  | "YIELD"
-  | "YIELD_ADJUSTMENT"
-  | "ADJUSTMENT";
+export type SavingsJarMovementType = "INITIAL_BALANCE" | "INITIAL_YIELD" | "DEPOSIT" | "WITHDRAWAL" | "YIELD" | "YIELD_ADJUSTMENT" | "ADJUSTMENT";
 
 export type AccountResponse = {
   id: number;
@@ -126,6 +111,8 @@ export type MonthlyPlanItemResponse = {
   id: number;
   financialPeriodId: number;
   financialPeriodName?: string | null;
+  parentItemId?: number | null;
+  parentItemDescription?: string | null;
   type: TransactionType;
   description: string;
   expectedAmount: number;
@@ -135,14 +122,26 @@ export type MonthlyPlanItemResponse = {
   paidOn?: string | null;
   status: MonthlyPlanItemStatus;
   nature: MonthlyPlanItemNature;
+  aggregationType?: MonthlyPlanItemAggregationType;
+  settlementOrigin?: MonthlyPlanItemSettlementOrigin;
+  paidByParent?: boolean;
+  includedInMainTotals?: boolean;
   recurring: boolean;
   recurrenceEndDate?: string | null;
+  recurringTemplateId?: number | null;
+  generatedFromItemId?: number | null;
+  recurrenceKey?: string | null;
+  recurrenceModifiedManually?: boolean;
   accountId?: number | null;
   accountName?: string | null;
   categoryId?: number | null;
   categoryName?: string | null;
   account?: AccountResponse | null;
   category?: CategoryResponse | null;
+  childExpectedTotal?: number;
+  childActualTotal?: number;
+  childDifference?: number;
+  children?: MonthlyPlanItemResponse[];
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string | null;
@@ -159,6 +158,8 @@ export type MonthlyPlanItemPayload = {
   paidOn?: string | null;
   status?: MonthlyPlanItemStatus | null;
   nature?: MonthlyPlanItemNature | null;
+  aggregationType?: MonthlyPlanItemAggregationType | null;
+  parentItemId?: number | null;
   recurring?: boolean;
   recurrenceEndDate?: string | null;
   notes?: string | null;
@@ -395,6 +396,7 @@ export type FinanceChatResponse = {
 
 export type InstallmentPurchaseStatus = "ACTIVE" | "COMPLETED" | "CANCELED";
 export type InstallmentEntryStatus = "PENDING" | "POSTED" | "PAID" | "CANCELED";
+export type InstallmentPaymentSource = "NONE" | "MANUAL" | "AUTOMATIC" | "CHAT" | "PARENT_INVOICE";
 
 export type InstallmentPurchaseEntryResponse = {
   id: number;
@@ -406,6 +408,11 @@ export type InstallmentPurchaseEntryResponse = {
   dueDate: string;
   amount: number;
   status: InstallmentEntryStatus;
+  paidOn?: string | null;
+  paymentSource?: InstallmentPaymentSource | null;
+  paidById?: number | null;
+  paidByName?: string | null;
+  paymentRegisteredAt?: string | null;
   notes?: string | null;
   createdAt?: string;
   updatedAt?: string | null;
@@ -432,6 +439,10 @@ export type InstallmentPurchaseResponse = {
   entries: InstallmentPurchaseEntryResponse[];
   createdAt?: string;
   updatedAt?: string | null;
+};
+
+export type InstallmentEntryPaymentPayload = {
+  paidOn?: string | null;
 };
 
 export type InstallmentPurchasePayload = {
@@ -477,18 +488,9 @@ export type UserFinancialProfileResponse = {
   updatedAt?: string | null;
 };
 
-export type UserFinancialProfilePayload = Omit<
-  UserFinancialProfileResponse,
-  "id" | "createdAt" | "updatedAt" | "onboardingCompletedAt"
->;
+export type UserFinancialProfilePayload = Omit<UserFinancialProfileResponse, "id" | "createdAt" | "updatedAt" | "onboardingCompletedAt">;
 
-export type FinancialReferenceType =
-  | "ARTICLE"
-  | "STUDY"
-  | "PDF"
-  | "VIDEO"
-  | "BOOK"
-  | "OTHER";
+export type FinancialReferenceType = "ARTICLE" | "STUDY" | "PDF" | "VIDEO" | "BOOK" | "OTHER";
 
 export type FinancialReferenceResponse = {
   id: number;

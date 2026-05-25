@@ -28,7 +28,6 @@ export function enumLabel(value?: string | null) {
     CHECKING: "Conta corrente",
     SAVINGS: "Poupança",
     CASH: "Dinheiro físico",
-    CREDIT_CARD: "Cartão de crédito",
     INVESTMENT: "Investimento",
     OTHER: "Outro",
     INCOME: "Receita",
@@ -54,15 +53,17 @@ export function enumLabel(value?: string | null) {
     CANCELED: "Cancelado",
     FIXED: "Fixo",
     VARIABLE: "Variável",
+    CREDIT_CARD: "Fatura/cartão",
+    NORMAL: "Normal",
+    GROUP_PARENT: "Fatura agrupadora",
+    GROUP_CHILD: "Item interno da fatura",
+    DIRECT: "Baixa direta",
+    PARENT: "Baixa pela fatura",
+    PARENT_INVOICE: "Fatura",
   };
   return value ? labels[value] || value : "-";
 }
 
-export function getErrorMessage(
-  error: any,
-  fallback = "Não foi possível concluir a operação.",
-) {
-  return (
-    error?.response?.data?.message || error?.response?.data?.error || fallback
-  );
+export function getErrorMessage(error: any, fallback = "Não foi possível concluir a operação.") {
+  return error?.response?.data?.message || error?.response?.data?.error || fallback;
 }
