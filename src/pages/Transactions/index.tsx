@@ -11,9 +11,19 @@ import { Box, Modal } from "@mui/material";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import EmptyState from "../../components/EmptyState";
-import { AccountResponse, CategoryResponse, FinancialTransactionPayload, FinancialTransactionResponse, TransactionType } from "../../types/finance";
+import {
+  CategoryResponse,
+  FinancialTransactionPayload,
+  FinancialTransactionResponse,
+  TransactionType,
+} from "../../types/finance";
 import { firstDayOfCurrentMonthISO, todayISO } from "../../utils/dates";
-import { enumLabel, formatDate, formatMoney, getErrorMessage } from "../../utils/formatters";
+import {
+  enumLabel,
+  formatDate,
+  formatMoney,
+  getErrorMessage,
+} from "../../utils/formatters";
 import { formatMoneyInput, parseMoneyInput } from "../../utils/moneyMask";
 import { api } from "../../utils/requests";
 
@@ -23,7 +33,6 @@ type TransactionFilters = {
   from: string;
   to: string;
   type: TransactionType | "";
-  accountId: string;
   categoryId: string;
 };
 
@@ -31,12 +40,11 @@ const defaultFilters = (): TransactionFilters => ({
   from: firstDayOfCurrentMonthISO(),
   to: todayISO(),
   type: "",
-  accountId: "",
   categoryId: "",
 });
 
 const defaultForm = (): FinancialTransactionPayload => ({
-  accountId: 0,
+  accountId: null,
   categoryId: null,
   type: "EXPENSE",
   description: "",
@@ -65,11 +73,14 @@ function daysAgoISO(days: number) {
 }
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<FinancialTransactionResponse[]>([]);
-  const [accounts, setAccounts] = useState<AccountResponse[]>([]);
+  const [transactions, setTransactions] = useState<
+    FinancialTransactionResponse[]
+  >([]);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [form, setForm] = useState<FinancialTransactionPayload>(defaultForm());
-  const [editing, setEditing] = useState<FinancialTransactionResponse | null>(null);
+  const [editing, setEditing] = useState<FinancialTransactionResponse | null>(
+    null,
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>(defaultFilters());
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
@@ -77,13 +88,8 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(false);
 
   const loadBase = useCallback(async () => {
-    const [accountsResponse, categoriesResponse] = await Promise.all([api.listAccounts(), api.listCategories()]);
-    const activeAccounts = accountsResponse.data.filter((item) => item.active);
-    const activeCategories = categoriesResponse.data.filter((item) => item.active);
-
-    setAccounts(activeAccounts);
-    setCategories(activeCategories);
-    setForm((prev) => (prev.accountId || !activeAccounts[0] ? prev : { ...prev, accountId: activeAccounts[0].id }));
+    const categoriesResponse = await api.listCategories();
+    setCategories(categoriesResponse.data.filter((item) => item.active));
   }, []);
 
   const loadTransactions = useCallback(async () => {
@@ -91,7 +97,6 @@ export default function TransactionsPage() {
       from: filters.from || undefined,
       to: filters.to || undefined,
       type: filters.type || undefined,
-      accountId: filters.accountId || undefined,
       categoryId: filters.categoryId || undefined,
     });
     setTransactions(response.data);
@@ -106,7 +111,12 @@ export default function TransactionsPage() {
   }, [loadTransactions]);
 
   const filteredCategories = useMemo(
-    () => categories.filter((item) => item.type === form.type || (form.type === "TRANSFER" && item.type === "TRANSFER")),
+    () =>
+      categories.filter(
+        (item) =>
+          item.type === form.type ||
+          (form.type === "TRANSFER" && item.type === "TRANSFER"),
+      ),
     [categories, form.type],
   );
 
@@ -115,25 +125,25 @@ export default function TransactionsPage() {
     return categories.filter((item) => item.type === filters.type);
   }, [categories, filters.type]);
 
-  const activeAdvancedFilters = Boolean(filters.accountId || filters.categoryId);
+  const activeAdvancedFilters = Boolean(filters.categoryId);
 
   const openCreateModal = useCallback(() => {
     setEditing(null);
-    setForm({ ...defaultForm(), accountId: accounts[0]?.id || 0 });
+    setForm(defaultForm());
     setModalOpen(true);
-  }, [accounts]);
+  }, []);
 
   const closeModal = useCallback(() => {
     if (loading) return;
     setModalOpen(false);
     setEditing(null);
-    setForm({ ...defaultForm(), accountId: accounts[0]?.id || 0 });
-  }, [accounts, loading]);
+    setForm(defaultForm());
+  }, [loading]);
 
   const edit = useCallback((item: FinancialTransactionResponse) => {
     setEditing(item);
     setForm({
-      accountId: item.account.id,
+      accountId: item.account?.id || null,
       categoryId: item.category?.id || null,
       type: item.type,
       description: item.description,
@@ -163,18 +173,17 @@ export default function TransactionsPage() {
   }, []);
 
   const applyCurrentMonth = useCallback(() => {
-    setFilters((prev) => ({ ...prev, from: firstDayOfCurrentMonthISO(), to: todayISO() }));
+    setFilters((prev) => ({
+      ...prev,
+      from: firstDayOfCurrentMonthISO(),
+      to: todayISO(),
+    }));
     setOptionsOpen(false);
   }, []);
 
   const submit = useCallback(
     async (event: FormEvent) => {
       event.preventDefault();
-
-      if (!form.accountId) {
-        toast.warning("Cadastre ou selecione uma conta.");
-        return;
-      }
 
       setLoading(true);
       try {
@@ -195,7 +204,7 @@ export default function TransactionsPage() {
 
         setModalOpen(false);
         setEditing(null);
-        setForm({ ...defaultForm(), accountId: accounts[0]?.id || 0 });
+        setForm(defaultForm());
         await loadTransactions();
       } catch (error) {
         toast.error(getErrorMessage(error));
@@ -203,7 +212,7 @@ export default function TransactionsPage() {
         setLoading(false);
       }
     },
-    [accounts, editing, form, loadTransactions],
+    [editing, form, loadTransactions],
   );
 
   const remove = useCallback(
@@ -226,27 +235,58 @@ export default function TransactionsPage() {
       <section className="page-hero compact transactions-hero">
         <div>
           <span className="eyebrow">Controle manual</span>
-          <h1>Transações</h1>
-          <p>Registre receitas, despesas e transferências manualmente.</p>
+          <h1>Histórico diário</h1>
+          <p>
+            Registre movimentações do dia a dia como detalhes do ciclo mensal. A
+            conta principal interna é usada automaticamente.
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal} type="button">
+        <button
+          className="btn btn-primary"
+          onClick={openCreateModal}
+          type="button"
+        >
           <AddIcon /> Nova transação
         </button>
       </section>
 
-      <section className="panel mm-table-card transactions-table-card">
+      <section
+        className="panel mm-table-card transactions-table-card"
+        data-tour="transactions-history"
+      >
         <div className="mm-table-toolbar">
           <div>
-            <h2>Histórico de transações</h2>
-            <p>Consulte os lançamentos registrados no período selecionado.</p>
+            <h2>Lançamentos do período</h2>
+            <p>
+              Consulte os registros que compõem categorias, contas do mês e
+              histórico financeiro.
+            </p>
           </div>
           <div className="mm-table-toolbar-actions">
             <div className="filters-inline compact-filters">
-              <input type="date" value={filters.from} onChange={(e) => setFilters((prev) => ({ ...prev, from: e.target.value }))} />
-              <input type="date" value={filters.to} onChange={(e) => setFilters((prev) => ({ ...prev, to: e.target.value }))} />
+              <input
+                type="date"
+                value={filters.from}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, from: e.target.value }))
+                }
+              />
+              <input
+                type="date"
+                value={filters.to}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, to: e.target.value }))
+                }
+              />
               <select
                 value={filters.type}
-                onChange={(e) => setFilters((prev) => ({ ...prev, type: e.target.value as TransactionType | "", categoryId: "" }))}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    type: e.target.value as TransactionType | "",
+                    categoryId: "",
+                  }))
+                }
               >
                 <option value="">Todos</option>
                 {types.map((type) => (
@@ -298,19 +338,16 @@ export default function TransactionsPage() {
         {advancedFiltersOpen && (
           <div className="transactions-advanced-filters">
             <label>
-              Conta
-              <select value={filters.accountId} onChange={(e) => setFilters((prev) => ({ ...prev, accountId: e.target.value }))}>
-                <option value="">Todas as contas</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
               Categoria
-              <select value={filters.categoryId} onChange={(e) => setFilters((prev) => ({ ...prev, categoryId: e.target.value }))}>
+              <select
+                value={filters.categoryId}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    categoryId: e.target.value,
+                  }))
+                }
+              >
                 <option value="">Todas as categorias</option>
                 {advancedCategoryOptions.map((category) => (
                   <option key={category.id} value={category.id}>
@@ -319,7 +356,11 @@ export default function TransactionsPage() {
                 ))}
               </select>
             </label>
-            <button type="button" className="btn btn-ghost" onClick={resetFilters}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={resetFilters}
+            >
               Limpar filtros
             </button>
           </div>
@@ -333,7 +374,6 @@ export default function TransactionsPage() {
                   <th>Descrição</th>
                   <th>Tipo</th>
                   <th>Categoria</th>
-                  <th>Conta</th>
                   <th>Data</th>
                   <th className="align-right">Valor</th>
                   <th className="align-right">Ações</th>
@@ -347,29 +387,49 @@ export default function TransactionsPage() {
                     <tr key={item.id}>
                       <td>
                         <div className="transaction-main-cell">
-                          <span className={`transaction-icon ${tone}`}>{getTransactionIcon(item.type)}</span>
+                          <span className={`transaction-icon ${tone}`}>
+                            {getTransactionIcon(item.type)}
+                          </span>
                           <span>
                             <strong>{item.description}</strong>
-                            <small>{item.notes || item.category?.name || "Lançamento financeiro"}</small>
+                            <small>
+                              {item.notes ||
+                                item.category?.name ||
+                                "Lançamento financeiro"}
+                            </small>
                           </span>
                         </div>
                       </td>
                       <td>
-                        <span className={`transaction-type-pill ${tone}`}>{enumLabel(item.type)}</span>
+                        <span className={`transaction-type-pill ${tone}`}>
+                          {enumLabel(item.type)}
+                        </span>
                       </td>
                       <td>{item.category?.name || "-"}</td>
-                      <td>{item.account.name}</td>
                       <td>{formatDate(item.occurredOn)}</td>
                       <td className={`transaction-amount align-right ${tone}`}>
-                        {item.type === "EXPENSE" ? "- " : item.type === "INCOME" ? "+ " : ""}
+                        {item.type === "EXPENSE"
+                          ? "- "
+                          : item.type === "INCOME"
+                            ? "+ "
+                            : ""}
                         {formatMoney(item.amount)}
                       </td>
                       <td>
                         <div className="table-actions refined-actions">
-                          <button onClick={() => edit(item)} type="button" title="Editar transação">
+                          <button
+                            onClick={() => edit(item)}
+                            type="button"
+                            title="Editar transação"
+                          >
                             <EditOutlinedIcon />
                           </button>
-                          <button className="danger-action" onClick={() => remove(item.id)} type="button" title="Excluir transação">
+                          <button
+                            className="danger-action"
+                            onClick={() => remove(item.id)}
+                            type="button"
+                            title="Excluir transação"
+                          >
                             <DeleteOutlineOutlinedIcon />
                           </button>
                         </div>
@@ -381,7 +441,10 @@ export default function TransactionsPage() {
             </table>
           </div>
         ) : (
-          <EmptyState title="Sem transações" message="Não há lançamentos no período selecionado." />
+          <EmptyState
+            title="Sem transações"
+            message="Não há lançamentos no período selecionado."
+          />
         )}
       </section>
 
@@ -390,11 +453,22 @@ export default function TransactionsPage() {
           <form className="transaction-modal-form" onSubmit={submit}>
             <div className="modal-title-row">
               <div>
-                <span className="eyebrow">{editing ? "Edição" : "Novo lançamento"}</span>
+                <span className="eyebrow">
+                  {editing ? "Edição" : "Novo lançamento"}
+                </span>
                 <h2>{editing ? "Editar transação" : "Nova transação"}</h2>
-                <p>{editing ? "Atualize os dados do lançamento selecionado." : "Informe os dados para registrar uma movimentação manual."}</p>
+                <p>
+                  {editing
+                    ? "Atualize os dados do lançamento selecionado."
+                    : "Informe os dados para registrar uma movimentação vinculada ao ciclo mensal."}
+                </p>
               </div>
-              <button className="icon-button ghost" onClick={closeModal} type="button" aria-label="Fechar modal">
+              <button
+                className="icon-button ghost"
+                onClick={closeModal}
+                type="button"
+                aria-label="Fechar modal"
+              >
                 <CloseIcon />
               </button>
             </div>
@@ -404,7 +478,13 @@ export default function TransactionsPage() {
                 Tipo
                 <select
                   value={form.type}
-                  onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as TransactionType, categoryId: null }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      type: e.target.value as TransactionType,
+                      categoryId: null,
+                    }))
+                  }
                 >
                   {types.map((type) => (
                     <option value={type} key={type}>
@@ -420,7 +500,12 @@ export default function TransactionsPage() {
                   required
                   inputMode="decimal"
                   value={formatMoneyInput(form.amount)}
-                  onChange={(e) => setForm((prev) => ({ ...prev, amount: parseMoneyInput(e.target.value) }))}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      amount: parseMoneyInput(e.target.value),
+                    }))
+                  }
                 />
               </label>
             </div>
@@ -430,7 +515,9 @@ export default function TransactionsPage() {
               <input
                 required
                 value={form.description}
-                onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, description: e.target.value }))
+                }
                 placeholder="Almoço, salário, internet"
               />
             </label>
@@ -438,19 +525,14 @@ export default function TransactionsPage() {
             <div className="form-grid two-columns">
               <label>
                 Data
-                <input required type="date" value={form.occurredOn} onChange={(e) => setForm((prev) => ({ ...prev, occurredOn: e.target.value }))} />
-              </label>
-
-              <label>
-                Conta
-                <select value={form.accountId} onChange={(e) => setForm((prev) => ({ ...prev, accountId: Number(e.target.value) }))}>
-                  <option value={0}>Selecione</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  required
+                  type="date"
+                  value={form.occurredOn}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, occurredOn: e.target.value }))
+                  }
+                />
               </label>
             </div>
 
@@ -458,7 +540,12 @@ export default function TransactionsPage() {
               Categoria
               <select
                 value={form.categoryId || ""}
-                onChange={(e) => setForm((prev) => ({ ...prev, categoryId: e.target.value ? Number(e.target.value) : null }))}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    categoryId: e.target.value ? Number(e.target.value) : null,
+                  }))
+                }
               >
                 <option value="">Sem categoria</option>
                 {filteredCategories.map((category) => (
@@ -471,15 +558,31 @@ export default function TransactionsPage() {
 
             <label>
               Observação
-              <textarea value={form.notes || ""} onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} placeholder="Opcional" />
+              <textarea
+                value={form.notes || ""}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, notes: e.target.value }))
+                }
+                placeholder="Opcional"
+              />
             </label>
 
             <div className="modal-actions end">
-              <button type="button" className="btn btn-ghost" onClick={closeModal} disabled={loading}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={closeModal}
+                disabled={loading}
+              >
                 Cancelar
               </button>
-              <button className="btn btn-primary" disabled={loading} type="submit">
-                <AddIcon /> {editing ? "Salvar alterações" : "Cadastrar transação"}
+              <button
+                className="btn btn-primary"
+                disabled={loading}
+                type="submit"
+              >
+                <AddIcon />{" "}
+                {editing ? "Salvar alterações" : "Cadastrar transação"}
               </button>
             </div>
           </form>

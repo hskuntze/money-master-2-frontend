@@ -2,14 +2,12 @@ import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import BarChartIcon from "@mui/icons-material/BarChart";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import ChecklistRtlIcon from "@mui/icons-material/ChecklistRtl";
-import InsightsIcon from "@mui/icons-material/Insights";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import NorthEastIcon from "@mui/icons-material/NorthEast";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import SavingsIcon from "@mui/icons-material/Savings";
 import SouthEastIcon from "@mui/icons-material/SouthEast";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import WalletIcon from "@mui/icons-material/Wallet";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -442,7 +440,7 @@ export default function ReportsPage() {
         </button>
       </section>
 
-      <section className="monthly-report-context panel">
+      <section className="monthly-report-context panel" data-tour="reports">
         <div>
           <span>Ciclo analisado</span>
           <strong>{periodLabel(selectedPeriod)}</strong>

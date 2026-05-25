@@ -16,7 +16,6 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import EmptyState from "@/components/EmptyState";
 import {
-  AccountResponse,
   CategoryResponse,
   FinancialPeriodResponse,
   FinancialPeriodStatus,
@@ -93,7 +92,6 @@ export default function MonthlyPeriodsPage() {
     null,
   );
   const [items, setItems] = useState<MonthlyPlanItemResponse[]>([]);
-  const [accounts, setAccounts] = useState<AccountResponse[]>([]);
   const [categories, setCategories] = useState<CategoryResponse[]>([]);
   const [statusFilter, setStatusFilter] = useState<MonthlyPlanItemStatus | "">(
     "",
@@ -138,17 +136,12 @@ export default function MonthlyPeriodsPage() {
     (summary?.unplannedExpenseTotal ?? 0);
 
   const loadBase = useCallback(async () => {
-    const [
-      periodsResponse,
-      currentResponse,
-      accountsResponse,
-      categoriesResponse,
-    ] = await Promise.all([
-      api.listFinancialPeriods(),
-      api.currentFinancialPeriod(),
-      api.listAccounts(),
-      api.listCategories(),
-    ]);
+    const [periodsResponse, currentResponse, categoriesResponse] =
+      await Promise.all([
+        api.listFinancialPeriods(),
+        api.currentFinancialPeriod(),
+        api.listCategories(),
+      ]);
 
     const mergedPeriods = periodsResponse.data.some(
       (period) => period.id === currentResponse.data.id,
@@ -160,7 +153,6 @@ export default function MonthlyPeriodsPage() {
     setCurrentPeriod(currentResponse.data);
     setSelectedPeriodId(currentResponse.data.id);
     setTurnoverDate(addOneDayISO(currentResponse.data.endDate));
-    setAccounts(accountsResponse.data.filter((account) => account.active));
     setCategories(
       categoriesResponse.data.filter((category) => category.active),
     );
@@ -224,10 +216,10 @@ export default function MonthlyPeriodsPage() {
     setEditingItem(null);
     setPlanForm({
       ...emptyPlanForm(selectedPeriod),
-      accountId: accounts[0]?.id || null,
+      accountId: null,
     });
     setPlanModalOpen(true);
-  }, [accounts, selectedPeriod, selectedPeriodClosed]);
+  }, [selectedPeriod, selectedPeriodClosed]);
 
   const openEditPlan = useCallback(
     (item: MonthlyPlanItemResponse) => {
@@ -411,13 +403,7 @@ O backend bloqueará o fechamento se existirem contas ou rendas pendentes.`)
         return;
       }
       if (item.status === "PAID") return;
-      const accountId = item.accountId || accounts[0]?.id;
-      if (!accountId) {
-        toast.warning(
-          "Cadastre ou vincule uma conta antes de registrar o pagamento/recebimento.",
-        );
-        return;
-      }
+      const accountId = item.accountId || null;
       const remaining = Math.max(
         Number(item.expectedAmount || 0) - Number(item.actualAmount || 0),
         0,
@@ -444,7 +430,7 @@ O backend bloqueará o fechamento se existirem contas ou rendas pendentes.`)
         toast.error(getErrorMessage(error));
       }
     },
-    [accounts, loadPeriodData, selectedPeriodClosed],
+    [loadPeriodData, selectedPeriodClosed],
   );
 
   const reopenPlanItem = useCallback(
@@ -672,7 +658,10 @@ Executar esta conciliação agora?`)
         </button>
       </section>
 
-      <section className="panel monthly-control-panel monthly-cycle-control-panel">
+      <section
+        className="panel monthly-control-panel monthly-cycle-control-panel"
+        data-tour="monthly-periods-cycle"
+      >
         <div className="monthly-period-selector">
           <label>
             Mês financeiro
@@ -891,7 +880,10 @@ Executar esta conciliação agora?`)
         </article>
       </section>
 
-      <section className="panel mm-table-card monthly-plan-panel">
+      <section
+        className="panel mm-table-card monthly-plan-panel"
+        data-tour="monthly-plan-items"
+      >
         <div className="mm-table-toolbar">
           <div>
             <h2>Contas e rendas do mês</h2>
@@ -977,10 +969,7 @@ Executar esta conciliação agora?`)
                     <td>
                       <strong>{item.description}</strong>
                       <small>
-                        {item.categoryName ||
-                          item.accountName ||
-                          item.notes ||
-                          "Item planejado"}
+                        {item.categoryName || item.notes || "Item planejado"}
                       </small>
                     </td>
                     <td>
@@ -1229,50 +1218,27 @@ Executar esta conciliação agora?`)
               </label>
             </div>
 
-            <div className="form-grid two-columns">
-              <label>
-                Conta vinculada
-                <select
-                  value={planForm.accountId || ""}
-                  onChange={(event) =>
-                    setPlanForm((prev) => ({
-                      ...prev,
-                      accountId: event.target.value
-                        ? Number(event.target.value)
-                        : null,
-                    }))
-                  }
-                >
-                  <option value="">Sem conta</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Categoria
-                <select
-                  value={planForm.categoryId || ""}
-                  onChange={(event) =>
-                    setPlanForm((prev) => ({
-                      ...prev,
-                      categoryId: event.target.value
-                        ? Number(event.target.value)
-                        : null,
-                    }))
-                  }
-                >
-                  <option value="">Sem categoria</option>
-                  {filteredCategories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <label>
+              Categoria
+              <select
+                value={planForm.categoryId || ""}
+                onChange={(event) =>
+                  setPlanForm((prev) => ({
+                    ...prev,
+                    categoryId: event.target.value
+                      ? Number(event.target.value)
+                      : null,
+                  }))
+                }
+              >
+                <option value="">Sem categoria</option>
+                {filteredCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <label className="checkbox-row monthly-checkbox-row">
               <input
@@ -1415,7 +1381,9 @@ Executar esta conciliação agora?`)
                       <tr key={transaction.id}>
                         <td>
                           <strong>{transaction.description}</strong>
-                          <small>{transaction.account?.name || "Conta"}</small>
+                          <small>
+                            {transaction.category?.name || "Sem categoria"}
+                          </small>
                         </td>
                         <td>{transaction.category?.name || "Sem categoria"}</td>
                         <td>{formatDate(transaction.occurredOn)}</td>

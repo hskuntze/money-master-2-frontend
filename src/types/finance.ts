@@ -30,6 +30,7 @@ export type AccountResponse = {
   type: AccountType;
   initialBalance: number;
   active: boolean;
+  internalDefault?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -53,6 +54,7 @@ export type CategoryResponse = {
   color?: string | null;
   systemDefault: boolean;
   active: boolean;
+  internalDefault?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -77,7 +79,7 @@ export type FinancialTransactionResponse = {
 };
 
 export type FinancialTransactionPayload = {
-  accountId: number;
+  accountId?: number | null;
   categoryId?: number | null;
   financialPeriodId?: number | null;
   monthlyPlanItemId?: number | null;
@@ -389,4 +391,153 @@ export type FinanceChatResponse = {
   answer: string;
   conversationId: string;
   answeredAt: string;
+};
+
+export type InstallmentPurchaseStatus = "ACTIVE" | "COMPLETED" | "CANCELED";
+export type InstallmentEntryStatus = "PENDING" | "POSTED" | "PAID" | "CANCELED";
+
+export type InstallmentPurchaseEntryResponse = {
+  id: number;
+  purchaseId: number;
+  financialPeriodId: number;
+  financialPeriodName?: string | null;
+  monthlyPlanItemId?: number | null;
+  installmentNumber: number;
+  dueDate: string;
+  amount: number;
+  status: InstallmentEntryStatus;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string | null;
+};
+
+export type InstallmentPurchaseResponse = {
+  id: number;
+  description: string;
+  totalAmount: number;
+  installmentCount: number;
+  installmentAmount: number;
+  purchaseDate: string;
+  firstDueDate: string;
+  lastDueDate: string;
+  status: InstallmentPurchaseStatus;
+  categoryId?: number | null;
+  categoryName?: string | null;
+  notes?: string | null;
+  postedInstallments: number;
+  paidInstallments: number;
+  pendingInstallments: number;
+  paidAmount: number;
+  remainingAmount: number;
+  entries: InstallmentPurchaseEntryResponse[];
+  createdAt?: string;
+  updatedAt?: string | null;
+};
+
+export type InstallmentPurchasePayload = {
+  description: string;
+  totalAmount?: number | null;
+  installmentCount: number;
+  installmentAmount?: number | null;
+  purchaseDate?: string | null;
+  firstDueDate: string;
+  categoryId?: number | null;
+  notes?: string | null;
+};
+
+export type UserFinancialProfileResponse = {
+  id?: number | null;
+  age?: number | null;
+  ageRange?: string | null;
+  profession?: string | null;
+  preferredName?: string | null;
+  cycleStartDay?: number | null;
+  incomeDay?: number | null;
+  approximateMonthlyIncome?: number | null;
+  initialGoalTargetAmount?: number | null;
+  onboardingVersion?: string | null;
+  currentFinancialSituation?: string | null;
+  spendingHabits?: string | null;
+  financialObjectives?: string | null;
+  shortTermGoals?: string | null;
+  mediumTermGoals?: string | null;
+  longTermGoals?: string | null;
+  riskTolerance?: string | null;
+  investmentKnowledge?: string | null;
+  investorProfile?: string | null;
+  financialPreferences?: string | null;
+  onboardingCompleted: boolean;
+  onboardingCompletedAt?: string | null;
+  tourCompleted?: boolean;
+  tourSkipped?: boolean;
+  tourCompletedAt?: string | null;
+  tourSkippedAt?: string | null;
+  tourLastStepKey?: string | null;
+  createdAt?: string;
+  updatedAt?: string | null;
+};
+
+export type UserFinancialProfilePayload = Omit<
+  UserFinancialProfileResponse,
+  "id" | "createdAt" | "updatedAt" | "onboardingCompletedAt"
+>;
+
+export type FinancialReferenceType =
+  | "ARTICLE"
+  | "STUDY"
+  | "PDF"
+  | "VIDEO"
+  | "BOOK"
+  | "OTHER";
+
+export type FinancialReferenceResponse = {
+  id: number;
+  title: string;
+  type: FinancialReferenceType;
+  url?: string | null;
+  description?: string | null;
+  source?: string | null;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string | null;
+};
+
+export type OnboardingFixedBillPayload = {
+  description: string;
+  amount: number;
+  dueDay: number;
+};
+
+export type OnboardingSetupPayload = {
+  preferredName?: string | null;
+  age?: number | null;
+  profession?: string | null;
+  cycleStartDay: number;
+  monthlyIncome: number;
+  incomeDay: number;
+  fixedBills: OnboardingFixedBillPayload[];
+  goals: string[];
+  initialGoalTargetAmount?: number | null;
+  investmentKnowledge?: string | null;
+  riskTolerance?: string | null;
+  investorProfile?: string | null;
+  startTourAfterOnboarding?: boolean;
+};
+
+export type OnboardingStatusResponse = {
+  onboardingCompleted: boolean;
+  onboardingCompletedAt?: string | null;
+  tourCompleted: boolean;
+  tourSkipped: boolean;
+  tourCompletedAt?: string | null;
+  tourSkippedAt?: string | null;
+  tourLastStepKey?: string | null;
+  shouldShowOnboarding: boolean;
+  shouldInviteTour: boolean;
+  profile: UserFinancialProfileResponse;
+};
+
+export type TourStatePayload = {
+  action: "COMPLETE" | "SKIP" | "RESET" | "PROGRESS";
+  lastStepKey?: string | null;
 };

@@ -30,7 +30,6 @@ import EmptyState from "@/components/EmptyState";
 import ProgressBar from "@/components/ProgressBar";
 import SafeApexChart from "@/components/SafeApexChart";
 import {
-  AccountResponse,
   SavingsJarMovementResponse,
   SavingsJarPayload,
   SavingsJarResponse,
@@ -171,7 +170,6 @@ function getJarIcon(
 
 export default function SavingsJarsPage() {
   const [jars, setJars] = useState<SavingsJarResponse[]>([]);
-  const [accounts, setAccounts] = useState<AccountResponse[]>([]);
   const [form, setForm] = useState<SavingsJarPayload>(emptyForm);
   const [editing, setEditing] = useState<SavingsJarResponse | null>(null);
   const [selected, setSelected] = useState<SavingsJarResponse | null>(null);
@@ -190,10 +188,10 @@ export default function SavingsJarsPage() {
   const selectedId = selected?.id;
 
   const load = useCallback(() => {
-    Promise.all([api.listSavingsJars(), api.listAccounts()])
-      .then(([savingsJarsResponse, accountsResponse]) => {
+    api
+      .listSavingsJars()
+      .then((savingsJarsResponse) => {
         setJars(savingsJarsResponse.data);
-        setAccounts(accountsResponse.data.filter((item) => item.active));
         if (selectedId) {
           const updated =
             savingsJarsResponse.data.find((item) => item.id === selectedId) ||
@@ -483,7 +481,7 @@ export default function SavingsJarsPage() {
   );
 
   return (
-    <div className="savings-jars-page page-stack">
+    <div className="savings-jars-page page-stack" data-tour="savings-jars">
       <section className="module-heading-row savings-heading-row">
         <div>
           <h1>Meus Cofrinhos</h1>
@@ -849,27 +847,6 @@ export default function SavingsJarsPage() {
                     setForm({ ...form, targetDate: event.target.value })
                   }
                 />
-              </label>
-              <label>
-                Conta vinculada
-                <select
-                  value={form.linkedAccountId || ""}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      linkedAccountId: event.target.value
-                        ? Number(event.target.value)
-                        : null,
-                    })
-                  }
-                >
-                  <option value="">Nenhuma</option>
-                  {accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.name}
-                    </option>
-                  ))}
-                </select>
               </label>
               {!editing && (
                 <>

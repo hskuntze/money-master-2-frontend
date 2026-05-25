@@ -25,7 +25,7 @@ import {
 import { formatDate, getErrorMessage } from "@/utils/formatters";
 import { api } from "@/utils/requests";
 
-type TabKey = "email" | "access" | "failures";
+type LogPanelKey = "access" | "failures";
 
 const emptyEmailSettings: EmailSettingsUpdateRequest = {
   enabled: true,
@@ -66,63 +66,97 @@ export default function SystemAdminPage() {
   const { hasPermission } = useContext(AuthContext);
   const canManageEmail = hasPermission("EMAIL_SETTINGS_MANAGE");
   const canReadLogs = hasPermission("LOG_READ");
-  const [tab, setTab] = useState<TabKey>(canManageEmail ? "email" : "access");
-
-  useEffect(() => {
-    if (tab === "email" && !canManageEmail) setTab("access");
-    if (
-      (tab === "access" || tab === "failures") &&
-      !canReadLogs &&
-      canManageEmail
-    )
-      setTab("email");
-  }, [tab, canManageEmail, canReadLogs]);
+  const [activeLogPanel, setActiveLogPanel] = useState<LogPanelKey | null>(
+    null,
+  );
 
   return (
-    <div className="system-admin-page page-stack">
-      <section className="module-heading-row">
+    <div className="system-admin-page system-settings-page page-stack">
+      <section className="system-settings-hero">
         <div>
-          <h1>Sistema</h1>
+          <span className="eyebrow">Administração</span>
+          <h1>Configurações do Sistema</h1>
           <p>
-            Configure SMTP, teste o envio de e-mails e acompanhe acessos e
-            falhas da aplicação.
+            Gerencie parâmetros globais da plataforma, comunicação SMTP e
+            monitoramento de logs do servidor.
           </p>
         </div>
       </section>
 
-      <div className="system-tabs">
-        {canManageEmail && (
-          <button
-            className={tab === "email" ? "active" : ""}
-            onClick={() => setTab("email")}
-            type="button"
-          >
-            <EmailIcon /> E-mail
-          </button>
-        )}
-        {canReadLogs && (
-          <>
-            <button
-              className={tab === "access" ? "active" : ""}
-              onClick={() => setTab("access")}
-              type="button"
-            >
-              <ListAltIcon /> Logs de acesso
-            </button>
-            <button
-              className={tab === "failures" ? "active" : ""}
-              onClick={() => setTab("failures")}
-              type="button"
-            >
-              <ErrorOutlineOutlinedIcon /> Logs de falhas
-            </button>
-          </>
-        )}
-      </div>
+      <section className="system-settings-layout">
+        <div className="system-settings-main">
+          {canManageEmail ? (
+            <EmailSettingsPanel />
+          ) : (
+            <section className="system-card system-empty-permission-card">
+              <span className="eyebrow">
+                <SettingsIcon /> Sistema
+              </span>
+              <h2>Configurações de e-mail indisponíveis</h2>
+              <p>Seu usuário não possui permissão para alterar SMTP.</p>
+            </section>
+          )}
+        </div>
 
-      {tab === "email" && canManageEmail && <EmailSettingsPanel />}
-      {tab === "access" && canReadLogs && <AccessLogsPanel />}
-      {tab === "failures" && canReadLogs && <FailureLogsPanel />}
+        <aside className="system-logs-sidebar">
+          <div className="system-side-heading">
+            <span className="system-side-icon">
+              <ListAltIcon />
+            </span>
+            <div>
+              <h2>Logs do Sistema</h2>
+              <p>Monitore acessos e falhas sem perder a visão geral.</p>
+            </div>
+          </div>
+
+          {canReadLogs ? (
+            <div className="system-log-card-list">
+              <button
+                type="button"
+                className={`system-log-action-card ${activeLogPanel === "access" ? "active" : ""}`}
+                onClick={() => setActiveLogPanel("access")}
+              >
+                <span>
+                  <strong>Logs de Acesso</strong>
+                  <small>
+                    Visualize histórico de logins, IPs e sessões ativas.
+                  </small>
+                </span>
+                <ListAltIcon />
+              </button>
+
+              <button
+                type="button"
+                className={`system-log-action-card danger ${activeLogPanel === "failures" ? "active" : ""}`}
+                onClick={() => setActiveLogPanel("failures")}
+              >
+                <span>
+                  <strong>Logs de Falhas</strong>
+                  <small>Monitore erros de runtime e exceções críticas.</small>
+                </span>
+                <ErrorOutlineOutlinedIcon />
+              </button>
+            </div>
+          ) : (
+            <p className="system-muted-text">
+              Seu usuário não possui permissão para consultar logs.
+            </p>
+          )}
+
+          <div className="server-status-card">
+            <div>
+              <span>Status do Servidor</span>
+              <strong>
+                <span /> Operacional
+              </strong>
+            </div>
+            <p>Área administrativa ativa para auditoria e suporte.</p>
+          </div>
+        </aside>
+      </section>
+
+      {canReadLogs && activeLogPanel === "access" && <AccessLogsPanel />}
+      {canReadLogs && activeLogPanel === "failures" && <FailureLogsPanel />}
     </div>
   );
 }

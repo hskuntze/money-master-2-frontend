@@ -247,7 +247,10 @@ export default function Dashboard() {
         </span>
       </section>
 
-      <section className="monthly-overview-grid">
+      <section
+        className="monthly-overview-grid"
+        data-tour="dashboard-monthly-summary"
+      >
         <article className="monthly-main-card">
           <div className="monthly-main-card-header">
             <div>
@@ -330,7 +333,10 @@ export default function Dashboard() {
       </section>
 
       <section className="monthly-dashboard-grid">
-        <article className="panel pending-plan-panel">
+        <article
+          className="panel pending-plan-panel"
+          data-tour="dashboard-pending-plan"
+        >
           <div className="panel-header clean">
             <div>
               <h2>Próximas pendências</h2>
@@ -476,7 +482,10 @@ export default function Dashboard() {
         </article>
       </section>
 
-      <section className="panel recent-transactions-panel">
+      <section
+        className="panel recent-transactions-panel"
+        data-tour="dashboard-recent-transactions"
+      >
         <div className="panel-header clean">
           <div>
             <h2>Transações recentes do ciclo</h2>

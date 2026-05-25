@@ -10,6 +10,8 @@ export type UserResponse = {
   createdAt?: string;
   updatedAt?: string;
   lastLoginAt?: string;
+  avatarUrl?: string | null;
+  avatarUpdatedAt?: string | null;
 };
 
 export type RoleResponse = {

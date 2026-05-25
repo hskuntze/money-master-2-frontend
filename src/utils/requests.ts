@@ -30,6 +30,11 @@ import {
   FinancialSummaryResponse,
   FinancialTransactionPayload,
   FinancialTransactionResponse,
+  InstallmentPurchasePayload,
+  InstallmentPurchaseResponse,
+  UserFinancialProfilePayload,
+  UserFinancialProfileResponse,
+  FinancialReferenceResponse,
   MonthlyPeriodSummaryResponse,
   MonthlyPlanItemPayload,
   MonthlyPlanItemPaymentPayload,
@@ -40,12 +45,15 @@ import {
   MonthlyPlanItemStatus,
   MonthlyPlanReconcilePayload,
   MonthlyPlanReconcileResponse,
+  OnboardingSetupPayload,
+  OnboardingStatusResponse,
   SavingsJarMovementResponse,
   SavingsJarPayload,
   SavingsJarResponse,
   SavingsJarSummaryResponse,
   SavingsJarYieldCorrectionResponse,
   TransactionType,
+  TourStatePayload,
 } from "@/types/finance";
 
 export type RequestConfig = AxiosRequestConfig & {
@@ -53,6 +61,18 @@ export type RequestConfig = AxiosRequestConfig & {
   skipGlobalErrorHandler?: boolean;
   skipAuthRefresh?: boolean;
 };
+
+export function resolveApiAssetUrl(url?: string | null) {
+  if (!url) return undefined;
+  if (
+    /^(https?:)?\/\//.test(url) ||
+    url.startsWith("data:") ||
+    url.startsWith("blob:")
+  ) {
+    return url;
+  }
+  return `${API_URL}${url.startsWith("/") ? url : `/${url}`}`;
+}
 
 export function requestBackend<T = any>(config: RequestConfig) {
   const auth = getAuthData();
@@ -96,6 +116,20 @@ export function requestBackendRefreshToken(refreshToken: string) {
 
 export const api = {
   me: () => requestBackend<UserResponse>({ method: "GET", url: "/auth/me" }),
+  updateCurrentUserProfile: (data: { name: string }) =>
+    requestBackend<UserResponse>({ method: "PUT", url: "/users/me", data }),
+  uploadCurrentUserAvatar: (file: Blob) => {
+    const formData = new FormData();
+    formData.append("file", file, "avatar.png");
+    return requestBackend<UserResponse>({
+      method: "POST",
+      url: "/users/me/avatar",
+      data: formData,
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  deleteCurrentUserAvatar: () =>
+    requestBackend<UserResponse>({ method: "DELETE", url: "/users/me/avatar" }),
   confirmEmail: (token: string) =>
     requestBackend<{ message: string }>({
       method: "GET",
@@ -395,6 +429,73 @@ export const api = {
       method: "GET",
       url: "/reports/compare",
       params,
+    }),
+
+  listInstallmentPurchases: () =>
+    requestBackend<InstallmentPurchaseResponse[]>({
+      method: "GET",
+      url: "/installment-purchases",
+    }),
+  getInstallmentPurchase: (id: number) =>
+    requestBackend<InstallmentPurchaseResponse>({
+      method: "GET",
+      url: `/installment-purchases/${id}`,
+    }),
+  createInstallmentPurchase: (data: InstallmentPurchasePayload) =>
+    requestBackend<InstallmentPurchaseResponse>({
+      method: "POST",
+      url: "/installment-purchases",
+      data,
+    }),
+  cancelInstallmentPurchase: (id: number) =>
+    requestBackend<{ message: string }>({
+      method: "DELETE",
+      url: `/installment-purchases/${id}`,
+    }),
+
+  getFinancialProfile: () =>
+    requestBackend<UserFinancialProfileResponse>({
+      method: "GET",
+      url: "/financial-profile",
+    }),
+  updateFinancialProfile: (data: UserFinancialProfilePayload) =>
+    requestBackend<UserFinancialProfileResponse>({
+      method: "PUT",
+      url: "/financial-profile",
+      data,
+    }),
+  getOnboardingStatus: () =>
+    requestBackend<OnboardingStatusResponse>({
+      method: "GET",
+      url: "/onboarding/status",
+    }),
+  completeOnboarding: (data: OnboardingSetupPayload) =>
+    requestBackend<OnboardingStatusResponse>({
+      method: "POST",
+      url: "/onboarding/complete",
+      data,
+    }),
+  updateTourState: (data: TourStatePayload) =>
+    requestBackend<OnboardingStatusResponse>({
+      method: "PUT",
+      url: "/onboarding/tour",
+      data,
+    }),
+  completeGuidedTour: () =>
+    requestBackend<OnboardingStatusResponse>({
+      method: "POST",
+      url: "/onboarding/tour/complete",
+    }),
+  skipGuidedTour: () =>
+    requestBackend<OnboardingStatusResponse>({
+      method: "POST",
+      url: "/onboarding/tour/skip",
+    }),
+  listFinancialReferences: (activeOnly = false) =>
+    requestBackend<FinancialReferenceResponse[]>({
+      method: "GET",
+      url: "/financial-references",
+      params: { activeOnly },
     }),
 
   chat: (message: string, conversationId?: string | null) =>

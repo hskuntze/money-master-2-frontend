@@ -17,17 +17,17 @@ type ChatMessage = {
 const welcomeMessage: ChatMessage = {
   role: "assistant",
   content:
-    "Olá. Sou seu assistente financeiro. Posso registrar gastos, receitas, consultar saldos, corrigir cofrinhos e orquestrar alterações com confirmação quando necessário.",
+    "Olá. Sou seu assistente financeiro. Posso registrar gastos do dia, compras parceladas, receitas, cofrinhos e ajudar a organizar seu planejamento mensal.",
   at: new Date(),
 };
 
 const suggestions = [
-  "Quais são meus cofrinhos?",
-  "Atualize os rendimentos dos meus cofrinhos com os saldos reais de hoje",
-  "Troque as transações da categoria Outros para Cartão de crédito",
+  "Registre uma compra parcelada de 6x de R$ 60,15 do Curso de Mandarim",
   "Gastei 35 reais com almoço hoje",
   "Recebi meu salário hoje",
-  "Quanto tenho guardado nos cofrinhos?",
+  "Quais contas do ciclo atual ainda estão pendentes?",
+  "Atualize os rendimentos dos meus cofrinhos com os saldos reais de hoje",
+  "Me dê uma dica para melhorar meu planejamento mensal considerando meu perfil",
 ];
 
 export default function ChatPage() {
@@ -107,13 +107,13 @@ export default function ChatPage() {
           </span>
           <h1>Converse com sua IA financeira</h1>
           <p>
-            O chat agora mantém o contexto da conversa e usa comandos
-            estruturados do backend para consultar, validar e executar
-            alterações.
+            O chat considera seu ciclo mensal, perfil financeiro, compras
+            parceladas e comandos estruturados do backend para consultar,
+            validar e executar alterações.
           </p>
         </div>
         <button
-          className="btn btn-secondary"
+          className="btn btn-ghost"
           type="button"
           onClick={startNewConversation}
           disabled={loading || !hasConversation}
@@ -170,7 +170,7 @@ export default function ChatPage() {
                 send();
               }
             }}
-            placeholder="Ex.: atualize meus cofrinhos com os saldos reais de hoje"
+            placeholder="Ex.: gastei R$ 39,90 no McDonald’s hoje ou comprei um curso em 6x de R$ 60,15"
             disabled={loading}
             rows={3}
           />

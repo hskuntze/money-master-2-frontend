@@ -11,10 +11,12 @@ import AuthPage from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
 import ChatPage from "@/pages/Chat";
 import TransactionsPage from "@/pages/Transactions";
-import AccountsPage from "@/pages/Accounts";
 import CategoriesPage from "@/pages/Categories";
 import SavingsJarsPage from "@/pages/SavingsJars";
 import MonthlyPeriodsPage from "@/pages/MonthlyPeriods";
+import InstallmentPurchasesPage from "@/pages/InstallmentPurchases";
+import UserProfilePage from "@/pages/UserProfile";
+import OnboardingPage from "@/pages/Onboarding";
 import ReportsPage from "@/pages/Reports";
 import ThemeSettingsPage from "@/pages/ThemeSettings";
 import SystemAdminPage from "@/pages/SystemAdmin";
@@ -36,6 +38,14 @@ function App() {
         <Route path="/register" element={<AuthPage mode="register" />} />
         <Route path="/recover-password" element={<AuthPage mode="recover" />} />
         <Route path="/confirm-email" element={<AuthPage mode="confirm" />} />
+        <Route
+          path="/onboarding"
+          element={
+            <PrivateRoute>
+              <OnboardingPage />
+            </PrivateRoute>
+          }
+        />
 
         <Route
           path="/app"
@@ -49,7 +59,15 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
-          <Route path="accounts" element={<AccountsPage />} />
+          <Route
+            path="installment-purchases"
+            element={<InstallmentPurchasesPage />}
+          />
+          <Route path="profile" element={<UserProfilePage />} />
+          <Route
+            path="accounts"
+            element={<Navigate to="/app/dashboard" replace />}
+          />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="savings-jars" element={<SavingsJarsPage />} />
           <Route path="monthly-periods" element={<MonthlyPeriodsPage />} />
